@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>одежда у шефа</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg-color: #0b0b0c;
+      --card-bg: #141416;
+      --accent-color: #f3f3f3;
+      --accent-hover: #ffffff;
+      --text-main: #ffffff;
+      --text-muted: #8e8e93;
+      --border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 16px;
+      padding-bottom: 90px;
+    }
+
+    header {
+      margin-bottom: 20px;
+      text-align: center;
+      padding-top: 8px;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-main);
+    }
+
+    header p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background-color: var(--accent-color);
+      color: var(--bg-color);
+      border-color: var(--accent-color);
+    }
+
+    .search-bar {
+      margin-bottom: 12px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 12px 14px;
+      background-color: var(--card-bg);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .filters-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .filter-select {
+      width: 100%;
+      padding: 12px 14px;
+      background-color: var(--card-bg);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      font-size: 0.85rem;
+      outline: none;
+      appearance: none;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 14px;
+    }
+
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    @media (min-width: 600px) {
+      .catalog-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .product-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .image-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      background-color: #1a1a1c;
+      overflow: hidden;
+    }
+
+    .product-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .product-size {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      color: #ffffff;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .like-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #fff;
+      font-size: 1rem;
+    }
+
+    .like-btn.liked {
+      color: #ff453a;
+    }
+
+    .product-details {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .product-title {
+      font-size: 0.85rem;
+      font-weight: 500;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .product-links {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+    }
+
+    .post-link {
+      color: var(--text-muted);
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .product-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .product-price {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .action-btn {
+      width: 100%;
+      padding: 9px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .btn-add {
+      background-color: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-add.in-cart {
+      background-color: var(--accent-color);
+      color: #0b0b0c;
+    }
+
+    .cart-bar {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      background-color: #1f1f23;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      transform: translateY(120%);
+      transition: transform 0.3s ease;
+      z-index: 100;
+      cursor: pointer;
+    }
+
+    .cart-bar.visible {
+      transform: translateY(0);
+    }
+
+    .cart-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cart-count {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .cart-total {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .cart-action-text {
+      background-color: var(--accent-color);
+      color: #0b0b0c;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.8);
+      z-index: 200;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background-color: #141416;
+      width: 100%;
+      max-height: 85vh;
+      border-top-left-radius: 24px;
+      border-top-right-radius: 24px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .cart-items-list {
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+      max-height: 40vh;
+    }
+
+    .cart-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #1a1a1c;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    .cart-item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .cart-item-name {
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .cart-item-price {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .remove-item {
+      background: none;
+      border: none;
+      color: #ff453a;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .checkout-btn {
+      width: 100%;
+      padding: 14px;
+      background-color: #34c759;
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 60px 20px;
+      grid-column: 1 / -1;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>одежда у шефа</h1>
+    <p>Selected Archive</p>
+  </header>
+
+  <div class="nav-tabs">
+    <button class="tab-btn active" id="tabCatalog" onclick="switchTab('catalog')">Каталог</button>
+    <button class="tab-btn" id="tabFavorites" onclick="switchTab('favorites')">Избранное (<span id="favCount">0</span>)</button>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" class="search-input" placeholder="Поиск по бренду, вещи..." oninput="filterProducts()" />
+  </div>
+
+  <div class="filters-section">
+    <div class="filter-group">
+      <select id="categoryFilter" class="filter-select" onchange="filterProducts()">
+        <option value="all">Все категории</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <select id="sortFilter" class="filter-select" onchange="filterProducts()">
+        <option value="default">Сортировка</option>
+        <option value="price-asc">Сначала дешевле</option>
+        <option value="price-desc">Сначала дороже</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="catalog" class="catalog-grid">
+    <div class="empty-state">Загрузка каталога...</div>
+  </div>
+
+  <div id="cartBar" class="cart-bar" onclick="openCartModal()">
+    <div class="cart-info">
+      <span class="cart-count" id="cartCountText">0 товаров</span>
+      <span class="cart-total" id="cartTotalPrice">0 ЛЕЙ</span>
+    </div>
+    <div class="cart-action-text">Корзина</div>
+  </div>
+
+  <div id="cartModal" class="modal-overlay" onclick="closeCartModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">Ваш выбор</div>
+        <button class="modal-close" onclick="closeCartModalDirect()">&times;</button>
+      </div>
+      <div id="cartItemsList" class="cart-items-list"></div>
+      <button class="checkout-btn" onclick="sendOrderToManager()">Оформить заказ</button>
+    </div>
+  </div>
+
+  <script>
+    let allProducts = [];
+    let cart = [];
+    let favorites = [];
+    let currentTab = 'catalog';
+
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQd7Cly6op0lIJW7DB7ari7rIN9OP_Q_wt3xeykDCjahiyIBp4kY6qzsI-zLbcndE6BFzLntFgUWMek/pub?output=csv';
+
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      if (lines.length < 2) return [];
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+      
+      return lines.slice(1).map((line, index) => {
+        const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        let obj = { id: String(index) };
+        headers.forEach((header, i) => {
+          obj[header] = values[i] || '';
+        });
+        return obj;
+      });
+    }
+
+    async function initApp() {
+      try {
+        const response = await fetch(CSV_URL + '&t=' + Date.now());
+        const text = await response.text();
+        const parsed = parseCSV(text);
+        if (parsed.length > 0) {
+          allProducts = parsed;
+        }
+      } catch (e) {
+        console.log('Ошибка сети, используем демо');
+      }
+
+      // Безопасный резерв, если таблица пустая или не загрузилась
+      if (allProducts.length === 0) {
+        allProducts = [
+          { id: "0", title: "Бомбер Alpha Industries", category: "Куртки", size: "S", price: "1200", photo: "https://i.postimg.cc/hGKyRL3b/photo-2026-10-17-18-35-43.jpg", post_link: "https://t.me/shmotshef/589" }
+        ];
+      }
+
+      populateFilterOptions();
+      filterProducts();
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.getElementById('tabCatalog').classList.toggle('active', tab === 'catalog');
+      document.getElementById('tabFavorites').classList.toggle('active', tab === 'favorites');
+      filterProducts();
+    }
+
+    function populateFilterOptions() {
+      const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
+      const catSelect = document.getElementById('categoryFilter');
+      const currentCat = catSelect.value;
+      catSelect.innerHTML = '<option value="all">Все категории</option>';
+      categories.forEach(cat => { catSelect.innerHTML += `<option value="${cat}">${cat}</option>`; });
+      catSelect.value = currentCat;
+    }
+
+    function filterProducts() {
+      const searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+      const selectedCategory = document.getElementById('categoryFilter').value;
+      const sortType = document.getElementById('sortFilter').value;
+
+      let list = [...allProducts];
+
+      if (currentTab === 'favorites') {
+        list = list.filter(p => favorites.includes(p.id));
+      }
+
+      if (searchQuery) {
+        list = list.filter(p => (p.title && p.title.toLowerCase().includes(searchQuery)) || (p.category && p.category.toLowerCase().includes(searchQuery)));
+      }
+
+      if (selectedCategory !== 'all') {
+        list = list.filter(p => p.category === selectedCategory);
+      }
+
+      if (sortType === 'price-asc') {
+        list.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+      } else if (sortType === 'price-desc') {
+        list.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+      }
+
+      renderProducts(list);
+    }
+
+    function renderProducts(products) {
+      const catalogEl = document.getElementById('catalog');
+      catalogEl.innerHTML = '';
+
+      document.getElementById('favCount').innerText = favorites.length;
+
+      if (products.length === 0) {
+        catalogEl.innerHTML = `<div class="empty-state">${currentTab === 'favorites' ? 'В избранном пока ничего нет' : 'По вашему запросу ничего не найдено'}</div>`;
+        return;
+      }
+
+      products.forEach(item => {
+        const inCart = cart.includes(item.id);
+        const isLiked = favorites.includes(item.id);
+
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+          <div class="image-container">
+            <img class="product-image" src="${item.photo}" alt="${item.title}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
+            <span class="product-size">${item.size}</span>
+            <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleFavorite('${item.id}')">♥</button>
+          </div>
+          <div class="product-details">
+            <div class="product-title">${item.title}</div>
+            <div class="product-links">
+              <a class="post-link" href="${item.post_link}" target="_blank">Смотреть пост ↗</a>
+            </div>
+            <div class="product-footer">
+              <div class="product-price">${item.price} ЛЕЙ</div>
+              <button class="action-btn btn-add ${inCart ? 'in-cart' : ''}" onclick="toggleCart('${item.id}')">
+                ${inCart ? 'В корзине ✓' : 'В корзину'}
+              </button>
+            </div>
+          </div>
+        `;
+        catalogEl.appendChild(card);
+      });
+    }
+
+    function toggleFavorite(id) {
+      const index = favorites.indexOf(id);
+      if (index > -1) {
+        favorites.splice(index, 1);
+      } else {
+        favorites.push(id);
+      }
+      filterProducts();
+    }
+
+    function toggleCart(id) {
+      const index = cart.indexOf(id);
+      if (index > -1) {
+        cart.splice(index, 1);
+      } else {
+        cart.push(id);
+      }
+      updateCartUI();
+      filterProducts();
+    }
+
+    function updateCartUI() {
+      const cartBar = document.getElementById('cartBar');
+      const countText = document.getElementById('cartCountText');
+      const totalPriceEl = document.getElementById('cartTotalPrice');
+
+      if (cart.length === 0) {
+        cartBar.classList.remove('visible');
+        return;
+      }
+
+      let totalSum = 0;
+      cart.forEach(id => {
+        const product = allProducts.find(p => p.id === id);
+        if (product) totalSum += Number(product.price) || 0;
+      });
+
+      countText.innerText = `${cart.length} товаров`;
+      totalPriceEl.innerText = `${totalSum} ЛЕЙ`;
+      cartBar.classList.add('visible');
+    }
+
+    function openCartModal() {
+      const listEl = document.getElementById('cartItemsList');
+      listEl.innerHTML = '';
+
+      cart.forEach(id => {
+        const product = allProducts.find(p => p.id === id);
+        if (!product) return;
+
+        const row = document.createElement('div');
+        row.className = 'cart-item-row';
+        row.innerHTML = `
+          <div class="cart-item-info">
+            <span class="cart-item-name">${product.title} (${product.size})</span>
+            <span class="cart-item-price">${product.price} ЛЕЙ</span>
+          </div>
+          <button class="remove-item" onclick="removeFromCart('${id}')">Удалить</button>
+        `;
+        listEl.appendChild(row);
+      });
+
+      document.getElementById('cartModalclassList']?.add('open');
+      document.getElementById('cartModal').classList.add('open');
+    }
+
+    function closeCartModal(e) {
+      document.getElementById('cartModal').classList.remove('open');
+    }
+
+    function closeCartModalDirect() {
+      document.getElementById('cartModal').classList.remove('open');
+    }
+
+    function removeFromCart(id) {
+      cart = cart.filter(item => item !== id);
+      updateCartUI();
+      filterProducts();
+      openCartModal();
+      if (cart.length === 0) closeCartModalDirect();
+    }
+
+    function sendOrderToManager() {
+      if (cart.length === 0) return;
+
+      let orderText = "🛍 Заказ из каталога «Одежда у шефа»:\n\n";
+      let totalSum = 0;
+
+      cart.forEach((id, index) => {
+        const product = allProducts.find(p => p.id === id);
+        if (product) {
+          orderText += `${index + 1}. ${product.title} (Размер: ${product.size}) — ${product.price} ЛЕЙ\n`;
+          orderText += `🔗 Ссылка: ${product.post_link}\n\n`;
+          totalSum += Number(product.price) || 0;
+        }
+      });
+
+      orderText += `💰 Общая сумма: ${totalSum} ЛЕЙ`;
+
+      const managerUsername = "shmotshefsms";
+      const telegramUrl = `https://t.me/${managerUsername}?text=` + encodeURIComponent(orderText);
+
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.openTelegramLink(telegramUrl);
+      } else {
+        window.open(telegramUrl, '_blank');
+      }
+    }
+
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
