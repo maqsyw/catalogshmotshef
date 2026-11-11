@@ -400,7 +400,7 @@
   </div>
 
   <div id="catalog" class="catalog-grid">
-    <div class="empty-state">Загрузка каталога...</div>
+    <!-- Пусто, заполнится скриптом моментально -->
   </div>
 
   <div id="cartBar" class="cart-bar" onclick="openCartModal()">
@@ -423,7 +423,7 @@
   </div>
 
   <script>
-    // Базовый набор данных (гарантирует моментальный вывод без ожидания сети)
+    // Гарантированный базовый набор товаров, чтобы каталог никогда не был пустым
     let allProducts = [
       { id: "1", title: "Олимпийка Adidas", category: "Куртки", size: "S", price: "550", photo: "https://i.postimg.cc/hGKyRL3b/photo-2026-10-17-18-35-43.jpg", post_link: "https://t.me/shmotshef/589" }
     ];
@@ -437,9 +437,7 @@
     function loadFavorites() {
       try {
         const stored = localStorage.getItem('shmotshef_favorites');
-        if (stored) {
-          favorites = JSON.parse(stored);
-        }
+        if (stored) favorites = JSON.parse(stored);
       } catch (e) {
         console.error("Не удалось загрузить избранное", e);
       }
@@ -500,11 +498,11 @@
     function initApp() {
       loadFavorites();
       
-      // Сразу выводим каталог с дефолтными данными, чтобы интерфейс не висел
+      // МОМЕНТАЛЬНО рендерим базовый каталог на экране, чтобы убрать надпись загрузки
       populateFilterOptions();
       filterProducts();
 
-      // Параллельно подтягиваем свежие данные из Google Таблиц
+      // Фоновый запрос к Google Таблице за актуальными данными
       fetch(CSV_URL + '&t=' + Date.now())
         .then(response => response.text())
         .then(text => {
@@ -516,7 +514,7 @@
           }
         })
         .catch(err => {
-          console.error('Не удалось обновить таблицу, работаем на локальном кэше', err);
+          console.error('Сеть недоступна, работаем на локальных данных', err);
         });
     }
 
@@ -549,4 +547,98 @@
     }
 
     function filterProducts() {
-      const searchQuery = document.getElementById('searchInput') ?
+      const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
+      const selectedCategory = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : 'all';
+      const selectedSize = document.getElementById('sizeFilter') ? document.getElementById('sizeFilter').value : 'all';
+
+      let list = [...allProducts];
+
+      if (currentTab === 'favorites') {
+        list = list.filter(p => favorites.includes(p.id));
+      }
+
+      if (searchQuery) {
+        list = list.filter(p => (p.title && p.title.toLowerCase().includes(searchQuery)) || (p.category && p.category.toLowerCase().includes(searchQuery)));
+      }
+
+      if (selectedCategory !== 'all') {
+        list = list.filter(p => p.category === selectedCategory);
+      }
+
+      if (selectedSize !== 'all') {
+        list = list.filter(p => p.size === selectedSize);
+      }
+
+      renderProducts(list);
+    }
+
+    function renderProducts(products) {
+      const catalogEl = document.getElementById('catalog');
+      if (!catalogEl) return;
+      catalogEl.innerHTML = '';
+
+      const favCountEl = document.getElementById('favCount');
+      if (favCountEl) favCountEl.innerText = favorites.length;
+
+      if (products.length === 0) {
+        catalogEl.innerHTML = `<div class="empty-state">${currentTab === 'favorites' ? 'В избранном пока ничего нет' : 'По вашему запросу ничего не найдено'}</div>`;
+        return;
+      }
+
+      products.forEach(item => {
+        const inCart = cart.includes(item.id);
+        const isLiked = favorites.includes(item.id);
+
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+          <div class="image-container">
+            <img class="product-image" src="${item.photo || ''}" alt="${item.title || ''}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
+            <span class="product-size">${item.size || ''}</span>
+            <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleFavorite('${item.id}')">♥</button>
+          </div>
+          <div class="product-details">
+            <div class="product-title">${item.title || 'Без названия'}</div>
+            <div class="product-links">
+              <a class="post-link" onclick="openPostAndClose('${item.post_link || '#'}', this)">Смотреть пост ↗</a>
+            </div>
+            <div class="product-footer">
+              <div class="product-price">${item.price || '0'} ЛЕЙ</div>
+              <button class="action-btn ${inCart ? 'in-cart' : ''}" onclick="toggleCart('${item.id}')">
+                ${inCart ? 'В корзине ✓' : 'В корзину'}
+              </button>
+            </div>
+          </div>
+        `;
+        catalogEl.appendChild(card);
+      });
+    }
+
+    function openPostAndClose(url, element) {
+      if (!url || url === '#') return;
+
+      if (element) {
+        element.innerText = "Переход...";
+        element.style.opacity = "0.7";
+      }
+
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.openTelegramLink(url);
+      } else {
+        window.open(url, '_blank');
+      }
+    }
+
+    function toggleFavorite(id) {
+      const index = favorites.indexOf(id);
+      if (index > -1) {
+        favorites.splice(index, 1);
+      } else {
+        favorites.push(id);
+      }
+      saveFavorites();
+      filterProducts();
+    }
+
+    function toggleCart(id) {
+      const index = cart
