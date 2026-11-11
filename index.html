@@ -447,7 +447,6 @@
       }
     }
 
-    // Более надежный парсер CSV строк с учетом кавычек
     function parseCSVLine(text) {
       let result = [];
       let current = '';
@@ -618,8 +617,12 @@
     function openPostAndClose(url) {
       if (!url || url === '#') return;
       if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.openTelegramLink(url);
-        window.Telegram.WebApp.close();
+        // Используем openLink, чтобы Telegram корректно свернул Mini App вниз
+        if (window.Telegram.WebApp.openLink) {
+          window.Telegram.WebApp.openLink(url);
+        } else {
+          window.Telegram.WebApp.openTelegramLink(url);
+        }
       } else {
         window.open(url, '_blank');
       }
@@ -729,22 +732,4 @@
 
       orderText += `💰 Общая сумма: ${totalSum} ЛЕЙ`;
 
-      const managerUsername = "shmotshefsms";
-      const telegramUrl = `https://t.me/${managerUsername}?text=` + encodeURIComponent(orderText);
-
-      if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.openTelegramLink(telegramUrl);
-      } else {
-        window.open(telegramUrl, '_blank');
-      }
-    }
-
-    if (window.Telegram && window.Telegram.WebApp) {
-      window.Telegram.WebApp.ready();
-      window.Telegram.WebApp.expand();
-    }
-
-    window.onload = initApp;
-  </script>
-</body>
-</html>
+      const managerUsername
