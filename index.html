@@ -600,19 +600,11 @@
         element.style.opacity = "0.7";
       }
 
-      let tgUrl = url;
-      if (url.includes('t.me/')) {
-        const parts = url.split('t.me/');
-        if (parts[1]) {
-          tgUrl = `tg://resolve?domain=${parts[1].replace('/', '&post=')}`;
-        }
-      }
-
       if (window.Telegram && window.Telegram.WebApp) {
-        if (window.Telegram.WebApp.openTelegramLink) {
-          window.Telegram.WebApp.openTelegramLink(tgUrl);
-        } else {
+        if (window.Telegram.WebApp.openLink) {
           window.Telegram.WebApp.openLink(url);
+        } else {
+          window.open(url, '_blank');
         }
       } else {
         window.open(url, '_blank');
