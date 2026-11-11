@@ -409,4 +409,336 @@
     <div class="cart-action-text">Корзина</div>
   </div>
 
-  <div id="cartModal" class="modal-overlay" onclick
+  <div id="cartModal" class="modal-overlay" onclick="closeCartModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">Ваш выбор</div>
+        <button class="modal-close" onclick="closeCartModalDirect()">&times;</button>
+      </div>
+      <div id="cartItemsList" class="cart-items-list"></div>
+      <button class="checkout-btn" onclick="sendOrderToManager()">Оформить заказ</button>
+    </div>
+  </div>
+
+  <script>
+    // Гарантированный набор товаров на случай сбоя сети или парсера
+    let allProducts = [
+      { id: "1", title: "Олимпийка Adidas", category: "Куртки", size: "S", price: "550", photo: "https://i.postimg.cc/hGKyRL3b/photo-2026-10-17-18-35-43.jpg", post_link: "https://t.me/shmotshef/589" }
+    ];
+
+    let cart = [];
+    let favorites = [];
+    let currentTab = 'catalog';
+
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQd7Cly6op0lIJW7DB7ari7rIN9OP_Q_wt3xeykDCjahiyIBp4kY6qzsI-zLbcndE6BFzLntFgUWMek/pub?output=csv';
+
+    function loadFavorites() {
+      try {
+        const stored = localStorage.getItem('shmotshef_favorites');
+        if (stored) favorites = JSON.parse(stored);
+      } catch (e) {
+        console.error("Не удалось загрузить избранное", e);
+      }
+    }
+
+    function saveFavorites() {
+      try {
+        localStorage.setItem('shmotshef_favorites', JSON.stringify(favorites));
+      } catch (e) {
+        console.error("Не удалось сохранить избранное", e);
+      }
+    }
+
+    function parseCSVLine(text) {
+      let result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        let char = text[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim().replace(/^"|"$/g, '').replace(/\r/g, ''));
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim().replace(/^"|"$/g, '').replace(/\r/g, ''));
+      return result;
+    }
+
+    function parseCSV(text) {
+      try {
+        const lines = text.trim().split('\n');
+        if (lines.length < 2) return [];
+        const rawHeaders = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
+        
+        let parsedList = [];
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          const values = parseCSVLine(lines[i]);
+          if (values.length === 0 || !values.some(v => v)) continue;
+          
+          let obj = { id: String(i) };
+          rawHeaders.forEach((header, index) => {
+            obj[header] = values[index] || '';
+          });
+
+          obj.title = obj.title || obj['название'] || obj['вещь'] || obj['товар'] || values[0] || '';
+          obj.category = obj.category || obj['категория'] || values[1] || '';
+          obj.size = obj.size || obj['размер'] || values[2] || '';
+          obj.price = obj.price || obj['цена'] || values[3] || '';
+          obj.photo = obj.photo || obj['фото'] || obj['картинка'] || values[4] || '';
+          obj.post_link = obj.post_link || obj['ссылка'] || obj['пост'] || values[5] || '#';
+
+          if (obj.title) {
+            parsedList.push(obj);
+          }
+        }
+        return parsedList;
+      } catch (err) {
+        console.error("Ошибка парсинга CSV:", err);
+        return [];
+      }
+    }
+
+    function initApp() {
+      try {
+        loadFavorites();
+        populateFilterOptions();
+        filterProducts();
+
+        fetch(CSV_URL + '&t=' + Date.now())
+          .then(response => response.text())
+          .then(text => {
+            const parsed = parseCSV(text);
+            if (parsed.length > 0) {
+              allProducts = parsed;
+              populateFilterOptions();
+              filterProducts();
+            }
+          })
+          .catch(err => {
+            console.error('Ошибка сети, используются базовые данные', err);
+          });
+      } catch (e) {
+        console.error("Ошибка инициализации:", e);
+      }
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.getElementById('tabCatalog').classList.toggle('active', tab === 'catalog');
+      document.getElementById('tabFavorites').classList.toggle('active', tab === 'favorites');
+      filterProducts();
+    }
+
+    function populateFilterOptions() {
+      try {
+        const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
+        const sizes = [...new Set(allProducts.map(p => p.size).filter(Boolean))];
+
+        const catSelect = document.getElementById('categoryFilter');
+        if (catSelect) {
+          const currentCat = catSelect.value;
+          catSelect.innerHTML = '<option value="all">Все категории</option>';
+          categories.forEach(cat => { catSelect.innerHTML += `<option value="${cat}">${cat}</option>`; });
+          catSelect.value = currentCat;
+        }
+
+        const sizeSelect = document.getElementById('sizeFilter');
+        if (sizeSelect) {
+          const currentSize = sizeSelect.value;
+          sizeSelect.innerHTML = '<option value="all">Все размеры</option>';
+          sizes.forEach(sz => { sizeSelect.innerHTML += `<option value="${sz}">${sz}</option>`; });
+          sizeSelect.value = currentSize;
+        }
+      } catch (e) {
+        console.error("Ошибка фильтров:", e);
+      }
+    }
+
+    function filterProducts() {
+      try {
+        const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
+        const selectedCategory = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : 'all';
+        const selectedSize = document.getElementById('sizeFilter') ? document.getElementById('sizeFilter').value : 'all';
+
+        let list = [...allProducts];
+
+        if (currentTab === 'favorites') {
+          list = list.filter(p => favorites.includes(p.id));
+        }
+
+        if (searchQuery) {
+          list = list.filter(p => (p.title && p.title.toLowerCase().includes(searchQuery)) || (p.category && p.category.toLowerCase().includes(searchQuery)));
+        }
+
+        if (selectedCategory !== 'all') {
+          list = list.filter(p => p.category === selectedCategory);
+        }
+
+        if (selectedSize !== 'all') {
+          list = list.filter(p => p.size === selectedSize);
+        }
+
+        renderProducts(list);
+      } catch (e) {
+        console.error("Ошибка фильтрации:", e);
+      }
+    }
+
+    function renderProducts(products) {
+      try {
+        const catalogEl = document.getElementById('catalog');
+        if (!catalogEl) return;
+        catalogEl.innerHTML = '';
+
+        const favCountEl = document.getElementById('favCount');
+        if (favCountEl) favCountEl.innerText = favorites.length;
+
+        if (!products || products.length === 0) {
+          catalogEl.innerHTML = `<div class="empty-state">${currentTab === 'favorites' ? 'В избранном пока ничего нет' : 'По вашему запросу ничего не найдено'}</div>`;
+          return;
+        }
+
+        products.forEach(item => {
+          const inCart = cart.includes(item.id);
+          const isLiked = favorites.includes(item.id);
+
+          const card = document.createElement('div');
+          card.className = 'product-card';
+          card.innerHTML = `
+            <div class="image-container">
+              <img class="product-image" src="${item.photo || ''}" alt="${item.title || ''}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
+              <span class="product-size">${item.size || ''}</span>
+              <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleFavorite('${item.id}')">♥</button>
+            </div>
+            <div class="product-details">
+              <div class="product-title">${item.title || 'Без названия'}</div>
+              <div class="product-links">
+                <a class="post-link" onclick="openPostAndClose('${item.post_link || '#'}', this)">Смотреть пост ↗</a>
+              </div>
+              <div class="product-footer">
+                <div class="product-price">${item.price || '0'} ЛЕЙ</div>
+                <button class="action-btn ${inCart ? 'in-cart' : ''}" onclick="toggleCart('${item.id}')">
+                  ${inCart ? 'В корзине ✓' : 'В корзину'}
+                </button>
+              </div>
+            </div>
+          `;
+          catalogEl.appendChild(card);
+        });
+      } catch (e) {
+        console.error("Ошибка рендеринга товаров:", e);
+      }
+    }
+
+    function openPostAndClose(url, element) {
+      if (!url || url === '#') return;
+
+      if (element) {
+        element.innerText = "Переход...";
+        element.style.opacity = "0.7";
+      }
+
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.openTelegramLink(url);
+      } else {
+        window.open(url, '_blank');
+      }
+    }
+
+    function toggleFavorite(id) {
+      const index = favorites.indexOf(id);
+      if (index > -1) {
+        favorites.splice(index, 1);
+      } else {
+        favorites.push(id);
+      }
+      saveFavorites();
+      filterProducts();
+    }
+
+    function toggleCart(id) {
+      const index = cart.indexOf(id);
+      if (index > -1) {
+        cart.splice(index, 1);
+      } else {
+        cart.push(id);
+      }
+      updateCartUI();
+      filterProducts();
+    }
+
+    function updateCartUI() {
+      const cartBar = document.getElementById('cartBar');
+      const countText = document.getElementById('cartCountText');
+      const totalPriceEl = document.getElementById('cartTotalPrice');
+
+      if (!cartBar) return;
+
+      if (cart.length === 0) {
+        cartBar.classList.remove('visible');
+        return;
+      }
+
+      let totalSum = 0;
+      cart.forEach(id => {
+        const product = allProducts.find(p => p.id === id);
+        if (product) totalSum += Number(product.price) || 0;
+      });
+
+      if (countText) countText.innerText = `${cart.length} товаров`;
+      if (totalPriceEl) totalPriceEl.innerText = `${totalSum} ЛЕЙ`;
+      cartBar.classList.add('visible');
+    }
+
+    function openCartModal() {
+      const listEl = document.getElementById('cartItemsList');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+
+      cart.forEach(id => {
+        const product = allProducts.find(p => p.id === id);
+        if (!product) return;
+
+        const row = document.createElement('div');
+        row.className = 'cart-item-row';
+        row.innerHTML = `
+          <div>
+            <div style="font-size:0.85rem; font-weight:500;">${product.title} (${product.size})</div>
+            <div style="font-size:0.8rem; color:#8e8e93;">${product.price} ЛЕЙ</div>
+          </div>
+          <button class="remove-item" onclick="removeFromCart('${id}')">Удалить</button>
+        `;
+        listEl.appendChild(row);
+      });
+
+      const modal = document.getElementById('cartModal');
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeCartModal() {
+      const modal = document.getElementById('cartModal');
+      if (modal) modal.classList.remove('open');
+    }
+
+    function closeCartModalDirect() {
+      closeCartModal();
+    }
+
+    function removeFromCart(id) {
+      cart = cart.filter(item => item !== id);
+      updateCartUI();
+      filterProducts();
+      openCartModal();
+      if (cart.length === 0) closeCartModal();
+    }
+
+    function sendOrderToManager() {
+      if (cart.length === 0) return;
+
+      let orderText = "🛍 Заказ из каталога «Одежда у шефа»:\n\n";
+      let
