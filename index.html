@@ -421,7 +421,11 @@
   </div>
 
   <script>
-    let allProducts = [];
+    // Резервный список на случай, если таблица не ответит
+    let allProducts = [
+      { id: "1", title: "Олимпийка Adidas", category: "Куртки", size: "XS/S", price: "550", photo: "https://i.postimg.cc/hGKyRL3b/photo-2026-10-17-18-35-43.jpg", post_link: "https://t.me/shmotshef/589" }
+    ];
+
     let cart = [];
     let favorites = [];
     let currentTab = 'catalog';
@@ -494,27 +498,23 @@
     function initApp() {
       loadFavorites();
       
+      // Сразу отрисовываем то, что есть, чтобы не было зависания
+      populateFilterOptions();
+      filterProducts();
+
+      // Параллельно пробуем подтянуть свежие данные из таблицы
       fetch(CSV_URL + '&t=' + Date.now())
         .then(response => response.text())
         .then(text => {
           const parsed = parseCSV(text);
           if (parsed.length > 0) {
             allProducts = parsed;
-          } else {
-            allProducts = [
-              { id: "0", title: "Тестовая куртка", category: "Куртки", size: "S", price: "1200", photo: "https://i.postimg.cc/hGKyRL3b/photo-2026-10-17-18-35-43.jpg", post_link: "https://t.me/shmotshef/589" }
-            ];
+            populateFilterOptions();
+            filterProducts();
           }
-          populateFilterOptions();
-          filterProducts();
         })
         .catch(err => {
-          console.error('Ошибка загрузки таблицы:', err);
-          allProducts = [
-            { id: "0", title: "Тестовая куртка", category: "Куртки", size: "S", price: "1200", photo: "https://i.postimg.cc/hGKyRL3b/photo-2026-10-17-18-35-43.jpg", post_link: "https://t.me/shmotshef/589" }
-          ];
-          populateFilterOptions();
-          filterProducts();
+          console.error('Не удалось обновить из таблицы, работаем на базовых данных', err);
         });
     }
 
@@ -646,4 +646,103 @@
     }
 
     function updateCartUI() {
-      const cart
+      const cartBar = document.getElementById('cartBar');
+      const countText = document.getElementById('cartCountText');
+      const totalPriceEl = document.getElementById('cartTotalPrice');
+
+      if (!cartBar) return;
+
+      if (cart.length === 0) {
+        cartBar.classList.remove('visible');
+        return;
+      }
+
+      let totalSum = 0;
+      cart.forEach(id => {
+        const product = allProducts.find(p => p.id === id);
+        if (product) totalSum += Number(product.price) || 0;
+      });
+
+      if (countText) countText.innerText = `${cart.length} товаров`;
+      if (totalPriceEl) totalPriceEl.innerText = `${totalSum} ЛЕЙ`;
+      cartBar.classList.add('visible');
+    }
+
+    function openCartModal() {
+      const listEl = document.getElementById('cartItemsList');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+
+      cart.forEach(id => {
+        const product = allProducts.find(p => p.id === id);
+        if (!product) return;
+
+        const row = document.createElement('div');
+        row.className = 'cart-item-row';
+        row.innerHTML = `
+          <div>
+            <div style="font-size:0.85rem; font-weight:500;">${product.title} (${product.size})</div>
+            <div style="font-size:0.8rem; color:#8e8e93;">${product.price} ЛЕЙ</div>
+          </div>
+          <button class="remove-item" onclick="removeFromCart('${id}')">Удалить</button>
+        `;
+        listEl.appendChild(row);
+      });
+
+      const modal = document.getElementById('cartModal');
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeCartModal() {
+      const modal = document.getElementById('cartModal');
+      if (modal) modal.classList.remove('open');
+    }
+
+    function closeCartModalDirect() {
+      closeCartModal();
+    }
+
+    function removeFromCart(id) {
+      cart = cart.filter(item => item !== id);
+      updateCartUI();
+      filterProducts();
+      openCartModal();
+      if (cart.length === 0) closeCartModal();
+    }
+
+    function sendOrderToManager() {
+      if (cart.length === 0) return;
+
+      let orderText = "🛍 Заказ из каталога «Одежда у шефа»:\n\n";
+      let totalSum = 0;
+
+      cart.forEach((id, index) => {
+        const product = allProducts.find(p => p.id === id);
+        if (product) {
+          orderText += `${index + 1}. ${product.title} (Размер: ${product.size}) — ${product.price} ЛЕЙ\n`;
+          orderText += `🔗 Ссылка: ${product.post_link}\n\n`;
+          totalSum += Number(product.price) || 0;
+        }
+      });
+
+      orderText += `💰 Общая сумма: ${totalSum} ЛЕЙ`;
+
+      const managerUsername = "shmotshefsms";
+      const telegramUrl = `https://t.me/${managerUsername}?text=` + encodeURIComponent(orderText);
+
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.openTelegramLink(telegramUrl);
+      } else {
+        window.open(telegramUrl, '_blank');
+      }
+    }
+
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+    }
+
+    window.onload = initApp;
+  </script>
+</body>
+</html>
