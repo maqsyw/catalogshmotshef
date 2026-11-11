@@ -399,7 +399,9 @@
     </div>
   </div>
 
-  <div id="catalog" class="catalog-grid"></div>
+  <div id="catalog" class="catalog-grid">
+    <div class="empty-state">Загрузка каталога...</div>
+  </div>
 
   <div id="cartBar" class="cart-bar" onclick="openCartModal()">
     <div class="cart-info">
@@ -421,7 +423,7 @@
   </div>
 
   <script>
-    // Гарантированный набор товаров на случай сбоя сети или парсера
+    // Базовые товары для немедленного отображения
     let allProducts = [
       { id: "1", title: "Олимпийка Adidas", category: "Куртки", size: "S", price: "550", photo: "https://i.postimg.cc/hGKyRL3b/photo-2026-10-17-18-35-43.jpg", post_link: "https://t.me/shmotshef/589" }
     ];
@@ -503,146 +505,101 @@
       }
     }
 
-    function initApp() {
-      try {
-        loadFavorites();
-        populateFilterOptions();
-        filterProducts();
+    function renderProducts(products) {
+      const catalogEl = document.getElementById('catalog');
+      if (!catalogEl) return;
+      catalogEl.innerHTML = '';
 
-        fetch(CSV_URL + '&t=' + Date.now())
-          .then(response => response.text())
-          .then(text => {
-            const parsed = parseCSV(text);
-            if (parsed.length > 0) {
-              allProducts = parsed;
-              populateFilterOptions();
-              filterProducts();
-            }
-          })
-          .catch(err => {
-            console.error('Ошибка сети, используются базовые данные', err);
-          });
-      } catch (e) {
-        console.error("Ошибка инициализации:", e);
+      const favCountEl = document.getElementById('favCount');
+      if (favCountEl) favCountEl.innerText = favorites.length;
+
+      if (!products || products.length === 0) {
+        catalogEl.innerHTML = `<div class="empty-state">${currentTab === 'favorites' ? 'В избранном пока ничего нет' : 'По вашему запросу ничего не найдено'}</div>`;
+        return;
       }
-    }
 
-    function switchTab(tab) {
-      currentTab = tab;
-      document.getElementById('tabCatalog').classList.toggle('active', tab === 'catalog');
-      document.getElementById('tabFavorites').classList.toggle('active', tab === 'favorites');
-      filterProducts();
+      products.forEach(item => {
+        const inCart = cart.includes(item.id);
+        const isLiked = favorites.includes(item.id);
+
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+          <div class="image-container">
+            <img class="product-image" src="${item.photo || ''}" alt="${item.title || ''}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
+            <span class="product-size">${item.size || ''}</span>
+            <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleFavorite('${item.id}')">♥</button>
+          </div>
+          <div class="product-details">
+            <div class="product-title">${item.title || 'Без названия'}</div>
+            <div class="product-links">
+              <a class="post-link" onclick="openPostAndClose('${item.post_link || '#'}', this)">Смотреть пост ↗</a>
+            </div>
+            <div class="product-footer">
+              <div class="product-price">${item.price || '0'} ЛЕЙ</div>
+              <button class="action-btn ${inCart ? 'in-cart' : ''}" onclick="toggleCart('${item.id}')">
+                ${inCart ? 'В корзине ✓' : 'В корзину'}
+              </button>
+            </div>
+          </div>
+        `;
+        catalogEl.appendChild(card);
+      });
     }
 
     function populateFilterOptions() {
-      try {
-        const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
-        const sizes = [...new Set(allProducts.map(p => p.size).filter(Boolean))];
+      const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
+      const sizes = [...new Set(allProducts.map(p => p.size).filter(Boolean))];
 
-        const catSelect = document.getElementById('categoryFilter');
-        if (catSelect) {
-          const currentCat = catSelect.value;
-          catSelect.innerHTML = '<option value="all">Все категории</option>';
-          categories.forEach(cat => { catSelect.innerHTML += `<option value="${cat}">${cat}</option>`; });
-          catSelect.value = currentCat;
-        }
+      const catSelect = document.getElementById('categoryFilter');
+      if (catSelect) {
+        const currentCat = catSelect.value;
+        catSelect.innerHTML = '<option value="all">Все категории</option>';
+        categories.forEach(cat => { catSelect.innerHTML += `<option value="${cat}">${cat}</option>`; });
+        catSelect.value = currentCat;
+      }
 
-        const sizeSelect = document.getElementById('sizeFilter');
-        if (sizeSelect) {
-          const currentSize = sizeSelect.value;
-          sizeSelect.innerHTML = '<option value="all">Все размеры</option>';
-          sizes.forEach(sz => { sizeSelect.innerHTML += `<option value="${sz}">${sz}</option>`; });
-          sizeSelect.value = currentSize;
-        }
-      } catch (e) {
-        console.error("Ошибка фильтров:", e);
+      const sizeSelect = document.getElementById('sizeFilter');
+      if (sizeSelect) {
+        const currentSize = sizeSelect.value;
+        sizeSelect.innerHTML = '<option value="all">Все размеры</option>';
+        sizes.forEach(sz => { sizeSelect.innerHTML += `<option value="${sz}">${sz}</option>`; });
+        sizeSelect.value = currentSize;
       }
     }
 
     function filterProducts() {
-      try {
-        const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
-        const selectedCategory = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : 'all';
-        const selectedSize = document.getElementById('sizeFilter') ? document.getElementById('sizeFilter').value : 'all';
+      const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
+      const selectedCategory = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : 'all';
+      const selectedSize = document.getElementById('sizeFilter') ? document.getElementById('sizeFilter').value : 'all';
 
-        let list = [...allProducts];
+      let list = [...allProducts];
 
-        if (currentTab === 'favorites') {
-          list = list.filter(p => favorites.includes(p.id));
-        }
-
-        if (searchQuery) {
-          list = list.filter(p => (p.title && p.title.toLowerCase().includes(searchQuery)) || (p.category && p.category.toLowerCase().includes(searchQuery)));
-        }
-
-        if (selectedCategory !== 'all') {
-          list = list.filter(p => p.category === selectedCategory);
-        }
-
-        if (selectedSize !== 'all') {
-          list = list.filter(p => p.size === selectedSize);
-        }
-
-        renderProducts(list);
-      } catch (e) {
-        console.error("Ошибка фильтрации:", e);
+      if (currentTab === 'favorites') {
+        list = list.filter(p => favorites.includes(p.id));
       }
-    }
 
-    function renderProducts(products) {
-      try {
-        const catalogEl = document.getElementById('catalog');
-        if (!catalogEl) return;
-        catalogEl.innerHTML = '';
-
-        const favCountEl = document.getElementById('favCount');
-        if (favCountEl) favCountEl.innerText = favorites.length;
-
-        if (!products || products.length === 0) {
-          catalogEl.innerHTML = `<div class="empty-state">${currentTab === 'favorites' ? 'В избранном пока ничего нет' : 'По вашему запросу ничего не найдено'}</div>`;
-          return;
-        }
-
-        products.forEach(item => {
-          const inCart = cart.includes(item.id);
-          const isLiked = favorites.includes(item.id);
-
-          const card = document.createElement('div');
-          card.className = 'product-card';
-          card.innerHTML = `
-            <div class="image-container">
-              <img class="product-image" src="${item.photo || ''}" alt="${item.title || ''}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
-              <span class="product-size">${item.size || ''}</span>
-              <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleFavorite('${item.id}')">♥</button>
-            </div>
-            <div class="product-details">
-              <div class="product-title">${item.title || 'Без названия'}</div>
-              <div class="product-links">
-                <a class="post-link" onclick="openPostAndClose('${item.post_link || '#'}', this)">Смотреть пост ↗</a>
-              </div>
-              <div class="product-footer">
-                <div class="product-price">${item.price || '0'} ЛЕЙ</div>
-                <button class="action-btn ${inCart ? 'in-cart' : ''}" onclick="toggleCart('${item.id}')">
-                  ${inCart ? 'В корзине ✓' : 'В корзину'}
-                </button>
-              </div>
-            </div>
-          `;
-          catalogEl.appendChild(card);
-        });
-      } catch (e) {
-        console.error("Ошибка рендеринга товаров:", e);
+      if (searchQuery) {
+        list = list.filter(p => (p.title && p.title.toLowerCase().includes(searchQuery)) || (p.category && p.category.toLowerCase().includes(searchQuery)));
       }
+
+      if (selectedCategory !== 'all') {
+        list = list.filter(p => p.category === selectedCategory);
+      }
+
+      if (selectedSize !== 'all') {
+        list = list.filter(p => p.size === selectedSize);
+      }
+
+      renderProducts(list);
     }
 
     function openPostAndClose(url, element) {
       if (!url || url === '#') return;
-
       if (element) {
         element.innerText = "Переход...";
         element.style.opacity = "0.7";
       }
-
       if (window.Telegram && window.Telegram.WebApp) {
         window.Telegram.WebApp.openTelegramLink(url);
       } else {
@@ -741,4 +698,60 @@
       if (cart.length === 0) return;
 
       let orderText = "🛍 Заказ из каталога «Одежда у шефа»:\n\n";
-      let
+      let totalSum = 0;
+
+      cart.forEach((id, index) => {
+        const product = allProducts.find(p => p.id === id);
+        if (product) {
+          orderText += `${index + 1}. ${product.title} (Размер: ${product.size}) — ${product.price} ЛЕЙ\n`;
+          orderText += `🔗 Ссылка: ${product.post_link}\n\n`;
+          totalSum += Number(product.price) || 0;
+        }
+      });
+
+      orderText += `💰 Общая сумма: ${totalSum} ЛЕЙ`;
+
+      const managerUsername = "shmotshefsms";
+      const telegramUrl = `https://t.me/${managerUsername}?text=` + encodeURIComponent(orderText);
+
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.openTelegramLink(telegramUrl);
+      } else {
+        window.open(telegramUrl, '_blank');
+      }
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.getElementById('tabCatalog').classList.toggle('active', tab === 'catalog');
+      document.getElementById('tabFavorites').classList.toggle('active', tab === 'favorites');
+      filterProducts();
+    }
+
+    // ЗАПУСК ПРИЛОЖЕНИЯ СРАЗУ (без ожидания onload)
+    loadFavorites();
+    populateFilterOptions();
+    filterProducts();
+
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+    }
+
+    // Фоновая загрузка из Google Таблиц
+    fetch(CSV_URL + '&t=' + Date.now())
+      .then(response => response.text())
+      .then(text => {
+        const parsed = parseCSV(text);
+        if (parsed.length > 0) {
+          allProducts = parsed;
+          populateFilterOptions();
+          filterProducts();
+        }
+      })
+      .catch(err => {
+        console.error('Ошибка сети, используются локальные данные', err);
+      });
+  </script>
+</body>
+</html>
