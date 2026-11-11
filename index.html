@@ -423,7 +423,7 @@
   </div>
 
   <script>
-    // Резервный список на случай задержки сети
+    // Базовый набор данных (гарантирует моментальный вывод без ожидания сети)
     let allProducts = [
       { id: "1", title: "Олимпийка Adidas", category: "Куртки", size: "S", price: "550", photo: "https://i.postimg.cc/hGKyRL3b/photo-2026-10-17-18-35-43.jpg", post_link: "https://t.me/shmotshef/589" }
     ];
@@ -499,9 +499,12 @@
 
     function initApp() {
       loadFavorites();
+      
+      // Сразу выводим каталог с дефолтными данными, чтобы интерфейс не висел
       populateFilterOptions();
       filterProducts();
 
+      // Параллельно подтягиваем свежие данные из Google Таблиц
       fetch(CSV_URL + '&t=' + Date.now())
         .then(response => response.text())
         .then(text => {
@@ -513,7 +516,7 @@
           }
         })
         .catch(err => {
-          console.error('Ошибка загрузки таблицы, используем кэш', err);
+          console.error('Не удалось обновить таблицу, работаем на локальном кэше', err);
         });
     }
 
@@ -546,57 +549,4 @@
     }
 
     function filterProducts() {
-      const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
-      const selectedCategory = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : 'all';
-      const selectedSize = document.getElementById('sizeFilter') ? document.getElementById('sizeFilter').value : 'all';
-
-      let list = [...allProducts];
-
-      if (currentTab === 'favorites') {
-        list = list.filter(p => favorites.includes(p.id));
-      }
-
-      if (searchQuery) {
-        list = list.filter(p => (p.title && p.title.toLowerCase().includes(searchQuery)) || (p.category && p.category.toLowerCase().includes(searchQuery)));
-      }
-
-      if (selectedCategory !== 'all') {
-        list = list.filter(p => p.category === selectedCategory);
-      }
-
-      if (selectedSize !== 'all') {
-        list = list.filter(p => p.size === selectedSize);
-      }
-
-      renderProducts(list);
-    }
-
-    function renderProducts(products) {
-      const catalogEl = document.getElementById('catalog');
-      if (!catalogEl) return;
-      catalogEl.innerHTML = '';
-
-      const favCountEl = document.getElementById('favCount');
-      if (favCountEl) favCountEl.innerText = favorites.length;
-
-      if (products.length === 0) {
-        catalogEl.innerHTML = `<div class="empty-state">${currentTab === 'favorites' ? 'В избранном пока ничего нет' : 'По вашему запросу ничего не найдено'}</div>`;
-        return;
-      }
-
-      products.forEach(item => {
-        const inCart = cart.includes(item.id);
-        const isLiked = favorites.includes(item.id);
-
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        card.innerHTML = `
-          <div class="image-container">
-            <img class="product-image" src="${item.photo \vert{}\vert{} ''}" alt="${item.title || ''}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
-            <span class="product-size">${item.size || ''}</span>
-            <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleFavorite('${item.id}')">♥</button>
-          </div>
-          <div class="product-details">
-            <div class="product-title">${item.title || 'Без названия'}</div>
-            <div class="product-links">
-              <a class="post-link" onclick="
+      const searchQuery = document.getElementById('searchInput') ?
