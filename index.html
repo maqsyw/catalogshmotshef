@@ -599,10 +599,18 @@
         element.innerText = "Переход...";
         element.style.opacity = "0.7";
       }
+
+      let tgUrl = url;
+      if (url.includes('t.me/')) {
+        const parts = url.split('t.me/');
+        if (parts[1]) {
+          tgUrl = `tg://resolve?domain=${parts[1].replace('/', '&post=')}`;
+        }
+      }
+
       if (window.Telegram && window.Telegram.WebApp) {
-        // Использование openTelegramLink сворачивает Mini App в плавающую панель снизу (как на вашем скриншоте)
         if (window.Telegram.WebApp.openTelegramLink) {
-          window.Telegram.WebApp.openTelegramLink(url);
+          window.Telegram.WebApp.openTelegramLink(tgUrl);
         } else {
           window.Telegram.WebApp.openLink(url);
         }
