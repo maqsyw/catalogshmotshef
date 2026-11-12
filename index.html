@@ -605,6 +605,7 @@
       }
     }
 
+    // НАИБОЛЕЕ ВАЖНАЯ ФУНКЦИЯ ДЛЯ СВОРАЧИВАНИЯ В ШТОРКУ
     function openPostAndClose(url, element) {
       if (!url || url === '#') return;
       if (element) {
@@ -613,6 +614,7 @@
       }
 
       if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+        // Вызов нативного метода Telegram для сворачивания в нижнюю панель
         window.Telegram.WebApp.openTelegramLink(url);
       } else {
         window.open(url, '_blank');
@@ -726,7 +728,7 @@
       const managerUsername = "shmotshefsms";
       const telegramUrl = `https://t.me/${managerUsername}?text=` + encodeURIComponent(orderText);
 
-      if (window.Telegram && window.Telegram.WebApp) {
+      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
         window.Telegram.WebApp.openTelegramLink(telegramUrl);
       } else {
         window.open(telegramUrl, '_blank');
@@ -740,7 +742,7 @@
       filterProducts();
     }
 
-    // Безопасный запуск приложения
+    // Инициализация при старте
     try {
       loadFavorites();
       populateFilterOptions();
@@ -756,7 +758,7 @@
       } catch (e) {}
     }
 
-    // Фоновое обновление из таблицы с обработкой ошибок
+    // Загрузка данных из Google Таблиц в фоне
     fetch(CSV_URL + '&t=' + Date.now())
       .then(response => response.text())
       .then(text => {
