@@ -512,10 +512,14 @@
           obj.price = obj.price || obj['цена'] || values[3] || '';
           obj.photo = obj.photo || obj['фото'] || obj['картинка'] || values[4] || '';
           obj.post_link = obj.post_link || obj['ссылка'] || obj['пост'] || values[5] || '#';
+          obj.status = (obj.status || obj['статус'] || '').toLowerCase().trim();
 
-          if (obj.title) {
-            parsedList.push(obj);
+          // Пропускаем товары, у которых статус "продан" или нет названия
+          if (obj.status === 'продан' || obj.status === 'нет' || !obj.title) {
+            continue;
           }
+
+          parsedList.push(obj);
         }
         return parsedList;
       } catch (err) {
@@ -598,7 +602,7 @@
       try {
         const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
         const selectedCategory = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : 'all';
-        const selectedSize = document.getElementById('sizeFilter') ? document.getElementById('sizeFilter').value : 'all';
+        const selectedSize = document.getElementById('sizeFilter') ? document.getElementById('sizeFilter'].value : 'all';
 
         let list = [...allProducts];
 
@@ -631,7 +635,7 @@
       toast.style.display = 'block';
       setTimeout(() => {
         toast.style.display = 'none';
-      }, 5000); // 5 секунд
+      }, 5000);
     }
 
     function openPostAndClose(id, url, element) {
@@ -765,6 +769,7 @@
 
     function switchTab(tab) {
       currentTab = tab;
+      dashboardTab = tab;
       document.getElementById('tabCatalog').classList.toggle('active', tab === 'catalog');
       document.getElementById('tabFavorites').classList.toggle('active', tab === 'favorites');
       filterProducts();
