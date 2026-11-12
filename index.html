@@ -391,7 +391,7 @@
 </head>
 <body>
 
-  <div id="toastBanner" class="toast-banner">✅ Пост открыт. Сверните каталог для просмота. 👆</div>
+  <div id="toastBanner" class="toast-banner">✅ Пост открыт. Для просмотра сверни каталог👆.</div>
 
   <header>
     <h1>одежда у шефа</h1>
@@ -637,7 +637,7 @@
         element.style.opacity = "0.7";
       }
 
-      showToast("✅ Пост открыт. Сверните каталог для просмота. 👆");
+      showToast("✅ Пост открыт. Для просмотра сверни каталог👆.");
 
       if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
         window.Telegram.WebApp.openTelegramLink(url);
@@ -767,7 +767,7 @@
       filterProducts();
     }
 
-    // Мгновенный запуск без зависаний
+    // Мгновенный запуск
     loadFavorites();
     populateFilterOptions();
     filterProducts();
