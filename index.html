@@ -449,6 +449,7 @@
     let cart = [];
     let favorites = [];
     let currentTab = 'catalog';
+    let openedPostId = null;
 
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQd7Cly6op0lIJW7DB7ari7rIN9OP_Q_wt3xeykDCjahiyIBp4kY6qzsI-zLbcndE6BFzLntFgUWMek/pub?output=csv';
 
@@ -539,6 +540,7 @@
       products.forEach(item => {
         const inCart = cart.includes(item.id);
         const isLiked = favorites.includes(item.id);
+        const isOpened = (openedPostId === item.id);
 
         const card = document.createElement('div');
         card.className = 'product-card';
@@ -551,7 +553,9 @@
           <div class="product-details">
             <div class="product-title">${item.title || 'Без названия'}</div>
             <div class="product-links">
-              <a class="post-link" onclick="openPostAndClose('${item.post_link || '#'}', '${item.title || ''}', this)">Смотреть пост ↗</a>
+              <a class="post-link" onclick="openPostAndClose('${item.id}', '${item.post_link || '#'}', this)">
+                ${isOpened ? 'Открыто ↗' : 'Смотреть пост ↗'}
+              </a>
             </div>
             <div class="product-footer">
               <div class="product-price">${item.price || '0'} ЛЕЙ</div>
@@ -627,15 +631,14 @@
       toast.style.display = 'block';
       setTimeout(() => {
         toast.style.display = 'none';
-      }, 3500);
+      }, 5000); // 5 секунд
     }
 
-    function openPostAndClose(url, title, element) {
+    function openPostAndClose(id, url, element) {
       if (!url || url === '#') return;
-      if (element) {
-        element.innerText = "Открыто ↗";
-        element.style.opacity = "0.7";
-      }
+
+      openedPostId = id;
+      filterProducts();
 
       showToast("✅ Пост открыт. Для просмотра сверни каталог👆.");
 
