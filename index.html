@@ -50,6 +50,7 @@
       text-transform: uppercase;
     }
 
+    /* Тоаст-уведомление-подсказка */
     .toast-banner {
       position: fixed;
       top: 16px;
@@ -249,6 +250,51 @@
       color: #0b0b0c;
     }
 
+    .cart-bar {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      background-color: #1f1f23;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 14px 20px;
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      cursor: pointer;
+    }
+
+    .cart-bar.visible {
+      display: flex;
+    }
+
+    .cart-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cart-count {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .cart-total {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .cart-action-text {
+      background-color: var(--accent-color);
+      color: #0b0b0c;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -358,7 +404,7 @@
   </div>
 
   <div class="search-bar">
-    <input type="text" id="searchInput" class="search-input" placeholder="Поиск по бренду, вещи..." oninput="onSearchInput()" />
+    <input type="text" id="searchInput" class="search-input" placeholder="Поиск по бренду, вещи..." oninput="filterProducts()" />
   </div>
 
   <div class="filters-section">
@@ -375,6 +421,14 @@
   </div>
 
   <div id="catalog" class="catalog-grid"></div>
+
+  <div id="cartBar" class="cart-bar" onclick="openCartModal()">
+    <div class="cart-info">
+      <span class="cart-count" id="cartCountText">0 товаров</span>
+      <span class="cart-total" id="cartTotalPrice">0 ЛЕЙ</span>
+    </div>
+    <div class="cart-action-text">Корзина</div>
+  </div>
 
   <div id="cartModal" class="modal-overlay" onclick="closeCartModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
@@ -398,24 +452,6 @@
     let openedPostId = null;
 
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQd7Cly6op0lIJW7DB7ari7rIN9OP_Q_wt3xeykDCjahiyIBp4kY6qzsI-zLbcndE6BFzLntFgUWMek/pub?output=csv';
-
-    // Функция тактильной отдачи (Haptic Feedback)
-    function triggerHaptic(style = 'light') {
-      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.impactOccurred(style);
-      }
-    }
-
-    // Склонение числительных (товар / товара / товаров)
-    function pluralizeGoods(count) {
-      const mod10 = count % 10;
-      const mod100 = count % 100;
-
-      if (mod100 >= 11 && mod100 <= 19) return 'товаров';
-      if (mod10 === 1) return 'товар';
-      if (mod10 >= 2 && mod10 <= 4) return 'товара';
-      return 'товаров';
-    }
 
     function loadFavorites() {
       try {
@@ -558,18 +594,6 @@
       }
     }
 
-    // Автоматический сброс селектов категорий и размеров при вводе текста в поиск
-    function onSearchInput() {
-      const searchInput = document.getElementById('searchInput');
-      if (searchInput && searchInput.value.trim().length > 0) {
-        const catSelect = document.getElementById('categoryFilter');
-        const sizeSelect = document.getElementById('sizeFilter');
-        if (catSelect) catSelect.value = 'all';
-        if (sizeSelect) sizeSelect.value = 'all';
-      }
-      filterProducts();
-    }
-
     function filterProducts() {
       try {
         const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
@@ -607,7 +631,7 @@
       toast.style.display = 'block';
       setTimeout(() => {
         toast.style.display = 'none';
-      }, 5000);
+      }, 5000); // 5 секунд
     }
 
     function openPostAndClose(id, url, element) {
@@ -626,7 +650,6 @@
     }
 
     function toggleFavorite(id) {
-      triggerHaptic('medium');
       const index = favorites.indexOf(id);
       if (index > -1) {
         favorites.splice(index, 1);
@@ -638,7 +661,6 @@
     }
 
     function toggleCart(id) {
-      triggerHaptic('light');
       const index = cart.indexOf(id);
       if (index > -1) {
         cart.splice(index, 1);
@@ -649,16 +671,15 @@
       filterProducts();
     }
 
-    // Управление Telegram MainButton (нативной нижней кнопкой)
     function updateCartUI() {
-      if (!window.Telegram || !window.Telegram.WebApp || !window.Telegram.WebApp.MainButton) {
-        return;
-      }
+      const cartBar = document.getElementById('cartBar');
+      const countText = document.getElementById('cartCountText');
+      const totalPriceEl = document.getElementById('cartTotalPrice');
 
-      const mainButton = window.Telegram.WebApp.MainButton;
+      if (!cartBar) return;
 
       if (cart.length === 0) {
-        mainButton.hide();
+        cartBar.classList.remove('visible');
         return;
       }
 
@@ -668,16 +689,9 @@
         if (product) totalSum += Number(product.price) || 0;
       });
 
-      const countLabel = `${cart.length} ${pluralizeGoods(cart.length)}`;
-      mainButton.text = `КОРЗИНА: ${countLabel} — ${totalSum} ЛЕЙ`;
-      mainButton.color = "#34c759";
-      mainButton.textColor = "#ffffff";
-      mainButton.show();
-    }
-
-    // Привязываем клик по нативной кнопке Telegram к открытию модального окна корзины
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
-      window.Telegram.WebApp.MainButton.onClick(openCartModal);
+      if (countText) countText.innerText = `${cart.length} товаров`;
+      if (totalPriceEl) totalPriceEl.innerText = `${totalSum} ЛЕЙ`;
+      cartBar.classList.add('visible');
     }
 
     function openCartModal() {
@@ -703,17 +717,11 @@
 
       const modal = document.getElementById('cartModal');
       if (modal) modal.classList.add('open');
-      
-      // Скрываем MainButton при открытом модальном окне заказа
-      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.MainButton) {
-        window.Telegram.WebApp.MainButton.hide();
-      }
     }
 
     function closeCartModal() {
       const modal = document.getElementById('cartModal');
       if (modal) modal.classList.remove('open');
-      updateCartUI(); // Возвращаем MainButton обратно, если в корзине есть товары
     }
 
     function closeCartModalDirect() {
@@ -721,7 +729,6 @@
     }
 
     function removeFromCart(id) {
-      triggerHaptic('light');
       cart = cart.filter(item => item !== id);
       updateCartUI();
       filterProducts();
@@ -763,6 +770,7 @@
       filterProducts();
     }
 
+    // Мгновенный запуск
     loadFavorites();
     populateFilterOptions();
     filterProducts();
@@ -774,6 +782,7 @@
       } catch (e) {}
     }
 
+    // Фоновая загрузка актуальной таблицы
     fetch(CSV_URL + '&t=' + Date.now())
       .then(response => response.text())
       .then(text => {
