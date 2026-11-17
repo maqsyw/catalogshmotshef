@@ -154,12 +154,18 @@
       aspect-ratio: 3 / 4;
       background-color: #1a1a1c;
       overflow: hidden;
+      cursor: pointer;
     }
 
     .product-image {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: transform 0.2s;
+    }
+
+    .image-container:hover .product-image {
+      transform: scale(1.03);
     }
 
     .product-size {
@@ -172,6 +178,8 @@
       font-weight: 600;
       padding: 4px 8px;
       border-radius: 6px;
+      z-index: 2;
+      pointer-events: none;
     }
 
     .like-btn {
@@ -188,6 +196,7 @@
       justify-content: center;
       cursor: pointer;
       color: #fff;
+      z-index: 2;
     }
 
     .like-btn.liked {
@@ -207,6 +216,11 @@
       font-size: 0.85rem;
       font-weight: 500;
       line-height: 1.3;
+      cursor: pointer;
+    }
+
+    .product-title:hover {
+      opacity: 0.8;
     }
 
     .post-link {
@@ -298,7 +312,7 @@
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background-color: rgba(0,0,0,0.8);
+      background-color: rgba(0,0,0,0.85);
       z-index: 200;
       display: none;
       justify-content: center;
@@ -312,19 +326,20 @@
     .modal-content {
       background-color: #141416;
       width: 100%;
-      max-height: 85vh;
+      max-height: 90vh;
       border-top-left-radius: 24px;
       border-top-right-radius: 24px;
       padding: 24px;
       display: flex;
       flex-direction: column;
+      overflow-y: auto;
     }
 
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     .modal-title {
@@ -399,7 +414,7 @@
   </header>
 
   <div class="nav-tabs">
-    <button class="tab-btn active" id="tabCatalog" onclick="switchTab('catalog')">Каталог (<span id="catalogCount">0</span>)</button>
+    <button class="tab-btn active" id="tabCatalog" onclick="switchTab('catalog')">Каталог <span id="catalogCountWrapper">(<span id="catalogCount">0</span>)</span></button>
     <button class="tab-btn" id="tabFavorites" onclick="switchTab('favorites')">Избранное (<span id="favCount">0</span>)</button>
   </div>
 
@@ -422,6 +437,7 @@
 
   <div id="catalog" class="catalog-grid"></div>
 
+  <!-- Плавающая корзина -->
   <div id="cartBar" class="cart-bar" onclick="openCartModal()">
     <div class="cart-info">
       <span class="cart-count" id="cartCountText">0 товаров</span>
@@ -430,6 +446,7 @@
     <div class="cart-action-text">Корзина</div>
   </div>
 
+  <!-- Модальное окно корзины -->
   <div id="cartModal" class="modal-overlay" onclick="closeCartModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
       <div class="modal-header">
@@ -441,15 +458,37 @@
     </div>
   </div>
 
+  <!-- Модальное окно детального просмотра товара -->
+  <div id="productModal" class="modal-overlay" onclick="closeProductModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitle">Детали товара</div>
+        <button class="modal-close" onclick="closeProductModalDirect()">&times;</button>
+      </div>
+      <div style="position: relative; width: 100%; max-height: 50vh; background-color: #1a1a1c; border-radius: 14px; overflow: hidden; margin-bottom: 16px; display: flex; justify-content: center; align-items: center;">
+        <img id="modalImage" src="" alt="" style="max-width: 100%; max-height: 50vh; object-fit: contain;" />
+        <span id="modalSizeBadge" class="product-size" style="top: 12px; left: 12px; font-size: 0.75rem; padding: 6px 10px;"></span>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div id="modalPrice" style="font-size: 1.15rem; font-weight: 700;"></div>
+      </div>
+      <p id="modalDescription" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 20px; white-space: pre-wrap;"></p>
+      <div style="display: flex; gap: 10px;">
+        <button id="modalCartBtn" class="action-btn" style="padding: 12px; font-size: 0.85rem;" onclick="toggleCartFromModal()">В корзину</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let allProducts = [
-      { id: "1", title: "Олимпийка Adidas", category: "Куртки", size: "S", price: "550", photo: "https://i.postimg.cc/hGKyRL3b/photo-2026-10-17-18-35-43.jpg", post_link: "https://t.me/shmotshef/589" }
+      { id: "1", title: "Олимпийка Adidas", category: "Куртки", size: "S", price: "550", description: "Классическая олимпийка Adidas в отличном состоянии. Винтажная модель.", photo: "https://i.postimg.cc/hGKyRL3b/photo-2026-10-17-18-35-43.jpg", post_link: "https://t.me/shmotshef/589" }
     ];
 
     let cart = [];
     let favorites = [];
     let currentTab = 'catalog';
     let openedPostId = null;
+    let activeModalProductId = null;
 
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQd7Cly6op0lIJW7DB7ari7rIN9OP_Q_wt3xeykDCjahiyIBp4kY6qzsI-zLbcndE6BFzLntFgUWMek/pub?output=csv';
 
@@ -528,6 +567,7 @@
           obj.price = obj.price || obj['цена'] || values[3] || '';
           obj.photo = obj.photo || obj['фото'] || obj['картинка'] || values[4] || '';
           obj.post_link = obj.post_link || obj['ссылка'] || obj['пост'] || values[5] || '#';
+          obj.description = obj.description || obj['описание'] || obj['текст'] || values[6] || 'Описание отсутствует.';
 
           if (obj.title) {
             parsedList.push(obj);
@@ -560,14 +600,18 @@
 
         const card = document.createElement('div');
         card.className = 'product-card';
+
+        // Безопасное экранирование для атрибутов
+        const safeTitle = (item.title || 'Без названия').replace(/"/g, '&quot;');
+
         card.innerHTML = `
-          <div class="image-container">
-            <img class="product-image" src="${item.photo || ''}" alt="${item.title || ''}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
+          <div class="image-container" onclick="openProductModal('${item.id}')">
+            <img class="product-image" src="${item.photo || ''}" alt="${safeTitle}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
             <span class="product-size">${item.size || ''}</span>
-            <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleFavorite('${item.id}')">♥</button>
+            <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="event.stopPropagation(); toggleFavorite('${item.id}')">♥</button>
           </div>
           <div class="product-details">
-            <div class="product-title">${item.title || 'Без названия'}</div>
+            <div class="product-title" onclick="openProductModal('${item.id}')">${safeTitle}</div>
             <div class="product-links">
               <a class="post-link" onclick="openPostAndClose('${item.id}', '${item.post_link || '#'}', this)">
                 ${isOpened ? 'Открыто ↗' : 'Смотреть пост ↗'}
@@ -611,13 +655,6 @@
     }
 
     function onSearchInput() {
-      const searchInput = document.getElementById('searchInput');
-      if (searchInput && searchInput.value.trim().length > 0) {
-        const catSelect = document.getElementById('categoryFilter');
-        const sizeSelect = document.getElementById('sizeFilter');
-        if (catSelect) catSelect.value = 'all';
-        if (sizeSelect) sizeSelect.value = 'all';
-      }
       filterProducts();
     }
 
@@ -645,10 +682,18 @@
           list = list.filter(p => p.size === selectedSize);
         }
 
-        // Обновляем счетчик товаров на кнопке «Каталог» в зависимости от отфильтрованного списка
+        // Обновляем счётчик только когда активна вкладка Каталог
         const catalogCountEl = document.getElementById('catalogCount');
-        if (catalogCountEl) {
-          catalogCountEl.innerText = list.length;
+        const catalogCountWrapper = document.getElementById('catalogCountWrapper');
+        
+        if (catalogCountEl && catalogCountWrapper) {
+          if (currentTab === 'catalog') {
+            catalogCountEl.innerText = list.length;
+            catalogCountWrapper.style.display = 'inline';
+          } else {
+            // При переходе в избранное счётчик на каталоге скрываем полностью
+            catalogCountWrapper.style.display = 'none';
+          }
         }
 
         renderProducts(list);
@@ -706,6 +751,9 @@
       }
       updateCartUI();
       filterProducts();
+      if (activeModalProductId === id) {
+        updateProductModalButton(id);
+      }
     }
 
     function updateCartUI() {
@@ -729,6 +777,50 @@
       if (countText) countText.innerText = `${cart.length} ${pluralizeGoods(cart.length)}`;
       if (totalPriceEl) totalPriceEl.innerText = `${totalSum} ЛЕЙ`;
       cartBar.classList.add('visible');
+    }
+
+    // Модальное окно деталей товара
+    function openProductModal(id) {
+      const product = allProducts.find(p => p.id === id);
+      if (!product) return;
+
+      activeModalProductId = id;
+
+      document.getElementById('modalTitle').innerText = product.title || 'Товар';
+      document.getElementById('modalImage').src = product.photo || '';
+      document.getElementById('modalSizeBadge').innerText = product.size || '';
+      document.getElementById('modalPrice').innerText = `${product.price || '0'} ЛЕЙ`;
+      document.getElementById('modalDescription').innerText = product.description || 'Описание отсутствует.';
+
+      updateProductModalButton(id);
+
+      document.getElementById('productModal').classList.add('open');
+    }
+
+    function updateProductModalButton(id) {
+      const btn = document.getElementById('modalCartBtn');
+      if (!btn) return;
+      const inCart = cart.includes(id);
+      if (inCart) {
+        btn.innerText = 'В корзине ✓';
+        btn.classList.add('in-cart');
+      } else {
+        btn.innerText = 'В корзину';
+        btn.classList.remove('in-cart');
+      }
+      btn.onclick = () => toggleCart(id);
+    }
+
+    function closeProductModal(event) {
+      const modal = document.getElementById('productModal');
+      if (modal) modal.classList.remove('open');
+      activeModalProductId = null;
+    }
+
+    function closeProductModalDirect() {
+      const modal = document.getElementById('productModal');
+      if (modal) modal.classList.remove('open');
+      activeModalProductId = null;
     }
 
     function openCartModal() {
@@ -771,6 +863,9 @@
       updateCartUI();
       filterProducts();
       openCartModal();
+      if (activeModalProductId === id) {
+        updateProductModalButton(id);
+      }
       if (cart.length === 0) closeCartModal();
     }
 
