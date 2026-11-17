@@ -109,10 +109,44 @@
       outline: none;
     }
 
+    /* Горизонтальные чипсы категорий */
+    .categories-scroll-container {
+      overflow-x: auto;
+      white-space: nowrap;
+      margin-bottom: 12px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .categories-scroll-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .category-chips {
+      display: inline-flex;
+      gap: 8px;
+    }
+
+    .chip {
+      padding: 8px 16px;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    }
+
+    .chip.active {
+      background-color: var(--accent-color);
+      color: var(--bg-color);
+      border-color: var(--accent-color);
+    }
+
     .filters-section {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
       margin-bottom: 20px;
     }
 
@@ -177,6 +211,14 @@
       z-index: 2;
     }
 
+    /* Анимация пульсации для сердечка */
+    @keyframes heartPulse {
+      0% { transform: scale(1); }
+      30% { transform: scale(1.35); }
+      60% { transform: scale(0.9); }
+      100% { transform: scale(1); }
+    }
+
     .like-btn {
       position: absolute;
       top: 10px;
@@ -202,6 +244,10 @@
 
     .like-btn.liked {
       color: #ff453a;
+    }
+
+    .like-btn.pulse {
+      animation: heartPulse 0.35s ease;
     }
 
     .product-details {
@@ -264,6 +310,13 @@
       color: #0b0b0c;
     }
 
+    /* Анимация отскока для плавающей корзины */
+    @keyframes cartBounce {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+      100% { transform: scale(1); }
+    }
+
     .cart-bar {
       position: fixed;
       bottom: 16px;
@@ -280,6 +333,10 @@
       cursor: pointer;
       box-shadow: 0 8px 24px rgba(0,0,0,0.6);
       animation: slideUpBar 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .cart-bar.bounce {
+      animation: cartBounce 0.35s ease;
     }
 
     @keyframes slideUpBar {
@@ -455,15 +512,15 @@
   </div>
 
   <div class="search-bar">
-    <input type="text" id="searchInput" class="search-input" placeholder="Поиск по бренду, вещи..." oninput="onSearchInput()" />
+    <input type="text" id="searchInput" class="search-input" placeholder="Поиск по бренду, вещи..." oninput="filterProducts()" />
+  </div>
+
+  <!-- Горизонтальные чипсы категорий -->
+  <div class="categories-scroll-container">
+    <div id="categoryChips" class="category-chips"></div>
   </div>
 
   <div class="filters-section">
-    <div class="filter-group">
-      <select id="categoryFilter" class="filter-select" onchange="filterProducts()">
-        <option value="all">Все категории</option>
-      </select>
-    </div>
     <div class="filter-group">
       <select id="sizeFilter" class="filter-select" onchange="filterProducts()">
         <option value="all">Все размеры</option>
@@ -504,6 +561,7 @@
     let favorites = [];
     let currentTab = 'catalog';
     let openedPostId = null;
+    let selectedCategory = 'all';
 
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQd7Cly6op0lIJW7DB7ari7rIN9OP_Q_wt3xeykDCjahiyIBp4kY6qzsI-zLbcndE6BFzLntFgUWMek/pub?output=csv';
 
@@ -620,7 +678,7 @@
           <div class="image-container">
             <img class="product-image" src="${item.photo || ''}" alt="${safeTitle}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
             <span class="product-size">${item.size || ''}</span>
-            <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleFavorite('${item.id}')">♥</button>
+            <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleFavorite('${item.id}', this)">♥</button>
           </div>
           <div class="product-details">
             <div class="product-title">${safeTitle}</div>
@@ -646,14 +704,17 @@
         const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
         const sizes = [...new Set(allProducts.map(p => p.size).filter(Boolean))];
 
-        const catSelect = document.getElementById('categoryFilter');
-        if (catSelect) {
-          const currentCat = catSelect.value;
-          catSelect.innerHTML = '<option value="all">Все категории</option>';
-          categories.forEach(cat => { catSelect.innerHTML += `<option value="${cat}">${cat}</option>`; });
-          catSelect.value = currentCat;
+        // Рендерим чипсы категорий
+        const chipsContainer = document.getElementById('categoryChips');
+        if (chipsContainer) {
+          let chipsHTML = `<div class="chip ${selectedCategory === 'all' ? 'active' : ''}" onclick="selectCategory('all')">Все категории</div>`;
+          categories.forEach(cat => {
+            chipsHTML += `<div class="chip ${selectedCategory === cat ? 'active' : ''}" onclick="selectCategory('${cat}')">${cat}</div>`;
+          });
+          chipsContainer.innerHTML = chipsHTML;
         }
 
+        // Заполняем фильтр размеров
         const sizeSelect = document.getElementById('sizeFilter');
         if (sizeSelect) {
           const currentSize = sizeSelect.value;
@@ -666,14 +727,16 @@
       }
     }
 
-    function onSearchInput() {
+    function selectCategory(cat) {
+      triggerHaptic('light');
+      selectedCategory = cat;
+      populateFilterOptions();
       filterProducts();
     }
 
     function filterProducts() {
       try {
         const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
-        const selectedCategory = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : 'all';
         const selectedSize = document.getElementById('sizeFilter') ? document.getElementById('sizeFilter').value : 'all';
 
         let list = [...allProducts];
@@ -735,13 +798,18 @@
       }
     }
 
-    function toggleFavorite(id) {
+    function toggleFavorite(id, element) {
       triggerHaptic('medium');
       const index = favorites.indexOf(id);
       if (index > -1) {
         favorites.splice(index, 1);
       } else {
         favorites.push(id);
+        // Запуск анимации пульсации при лайке
+        if (element) {
+          element.classList.add('pulse');
+          setTimeout(() => element.classList.remove('pulse'), 350);
+        }
       }
       saveFavorites();
       filterProducts();
@@ -754,6 +822,12 @@
         cart.splice(index, 1);
       } else {
         cart.push(id);
+        // Запуск анимации отскока панели корзины
+        const cartBar = document.getElementById('cartBar');
+        if (cartBar) {
+          cartBar.classList.add('bounce');
+          setTimeout(() => cartBar.classList.remove('bounce'), 350);
+        }
       }
       updateCartUI();
       filterProducts();
