@@ -249,7 +249,6 @@
       color: #0b0b0c;
     }
 
-    /* Плавающая панель корзины */
     .cart-bar {
       position: fixed;
       bottom: 16px;
@@ -396,11 +395,11 @@
 
   <header>
     <h1>одежда у шефа🥩</h1>
-    <p>одежда в наличии</p>
+    <p>товары в наличии</p>
   </header>
 
   <div class="nav-tabs">
-    <button class="tab-btn active" id="tabCatalog" onclick="switchTab('catalog')">Каталог</button>
+    <button class="tab-btn active" id="tabCatalog" onclick="switchTab('catalog')">Каталог (<span id="catalogCount">0</span>)</button>
     <button class="tab-btn" id="tabFavorites" onclick="switchTab('favorites')">Избранное (<span id="favCount">0</span>)</button>
   </div>
 
@@ -423,7 +422,6 @@
 
   <div id="catalog" class="catalog-grid"></div>
 
-  <!-- Плавающая панель корзины -->
   <div id="cartBar" class="cart-bar" onclick="openCartModal()">
     <div class="cart-info">
       <span class="cart-count" id="cartCountText">0 товаров</span>
@@ -455,14 +453,12 @@
 
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQd7Cly6op0lIJW7DB7ari7rIN9OP_Q_wt3xeykDCjahiyIBp4kY6qzsI-zLbcndE6BFzLntFgUWMek/pub?output=csv';
 
-    // Функция тактильной отдачи (Haptic Feedback)
     function triggerHaptic(style = 'light') {
       if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
         window.Telegram.WebApp.HapticFeedback.impactOccurred(style);
       }
     }
 
-    // Склонение числительных (товар / товара / товаров)
     function pluralizeGoods(count) {
       const mod10 = count % 10;
       const mod100 = count % 100;
@@ -614,7 +610,6 @@
       }
     }
 
-    // Автоматический сброс селектов категорий и размеров при вводе текста в поиск
     function onSearchInput() {
       const searchInput = document.getElementById('searchInput');
       if (searchInput && searchInput.value.trim().length > 0) {
@@ -650,6 +645,12 @@
           list = list.filter(p => p.size === selectedSize);
         }
 
+        // Обновляем счетчик товаров на кнопке «Каталог» в зависимости от отфильтрованного списка
+        const catalogCountEl = document.getElementById('catalogCount');
+        if (catalogCountEl) {
+          catalogCountEl.innerText = list.length;
+        }
+
         renderProducts(list);
       } catch (e) {
         console.error("Ошибка фильтрации:", e);
@@ -669,7 +670,6 @@
     function openPostAndClose(id, url, element) {
       if (!url || url === '#') return;
 
-      // Тактильная отдача при нажатии на «Смотреть пост»
       triggerHaptic('light');
 
       openedPostId = id;
@@ -708,7 +708,6 @@
       filterProducts();
     }
 
-    // Управление кастомным плавающим баром корзины
     function updateCartUI() {
       const cartBar = document.getElementById('cartBar');
       const countText = document.getElementById('cartCountText');
