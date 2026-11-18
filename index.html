@@ -20,7 +20,6 @@
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      -webkit-tap-highlight-color: transparent;
     }
 
     body {
@@ -51,6 +50,7 @@
       text-transform: uppercase;
     }
 
+    /* Тоаст-уведомление-подсказка */
     .toast-banner {
       position: fixed;
       top: 16px;
@@ -109,44 +109,10 @@
       outline: none;
     }
 
-    /* Горизонтальные чипсы категорий */
-    .categories-scroll-container {
-      overflow-x: auto;
-      white-space: nowrap;
-      margin-bottom: 12px;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-    }
-
-    .categories-scroll-container::-webkit-scrollbar {
-      display: none;
-    }
-
-    .category-chips {
-      display: inline-flex;
-      gap: 8px;
-    }
-
-    .chip {
-      padding: 8px 16px;
-      background-color: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 20px;
-      color: var(--text-muted);
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      user-select: none;
-      transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-    }
-
-    .chip.active {
-      background-color: var(--accent-color);
-      color: var(--bg-color);
-      border-color: var(--accent-color);
-    }
-
     .filters-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
       margin-bottom: 20px;
     }
 
@@ -202,21 +168,11 @@
       top: 10px;
       left: 10px;
       background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(4px);
       color: #ffffff;
       font-size: 0.7rem;
       font-weight: 600;
       padding: 4px 8px;
       border-radius: 6px;
-      z-index: 2;
-    }
-
-    /* Анимация пульсации для сердечка */
-    @keyframes heartPulse {
-      0% { transform: scale(1); }
-      30% { transform: scale(1.35); }
-      60% { transform: scale(0.9); }
-      100% { transform: scale(1); }
     }
 
     .like-btn {
@@ -224,7 +180,6 @@
       top: 10px;
       right: 10px;
       background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(4px);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 50%;
       width: 32px;
@@ -234,20 +189,10 @@
       justify-content: center;
       cursor: pointer;
       color: #fff;
-      z-index: 2;
-      transition: transform 0.2s;
-    }
-
-    .like-btn:active {
-      transform: scale(0.9);
     }
 
     .like-btn.liked {
       color: #ff453a;
-    }
-
-    .like-btn.pulse {
-      animation: heartPulse 0.35s ease;
     }
 
     .product-details {
@@ -298,23 +243,11 @@
       background-color: rgba(255, 255, 255, 0.08);
       color: var(--text-main);
       border: 1px solid var(--border-color);
-      transition: background-color 0.2s, transform 0.1s;
-    }
-
-    .action-btn:active {
-      transform: scale(0.98);
     }
 
     .action-btn.in-cart {
       background-color: var(--accent-color);
       color: #0b0b0c;
-    }
-
-    /* Анимация отскока для плавающей корзины */
-    @keyframes cartBounce {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.04); }
-      100% { transform: scale(1); }
     }
 
     .cart-bar {
@@ -331,17 +264,6 @@
       align-items: center;
       z-index: 100;
       cursor: pointer;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-      animation: slideUpBar 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .cart-bar.bounce {
-      animation: cartBounce 0.35s ease;
-    }
-
-    @keyframes slideUpBar {
-      from { transform: translateY(30px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
     }
 
     .cart-bar.visible {
@@ -373,77 +295,48 @@
       text-transform: uppercase;
     }
 
-    /* Модальное окно корзины */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background-color: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      background-color: rgba(0,0,0,0.8);
       z-index: 200;
       display: none;
       justify-content: center;
       align-items: flex-end;
-      opacity: 0;
-      transition: opacity 0.3s ease;
     }
 
     .modal-overlay.open {
       display: flex;
-      opacity: 1;
     }
 
     .modal-content {
       background-color: #141416;
       width: 100%;
-      max-height: 90vh;
-      border-top-left-radius: 28px;
-      border-top-right-radius: 28px;
-      padding: 12px 20px 28px 20px;
+      max-height: 85vh;
+      border-top-left-radius: 24px;
+      border-top-right-radius: 24px;
+      padding: 24px;
       display: flex;
       flex-direction: column;
-      overflow-y: auto;
-      border-top: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.8);
-      transform: translateY(100%);
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .modal-overlay.open .modal-content {
-      transform: translateY(0);
-    }
-
-    .modal-grabber {
-      width: 36px;
-      height: 4px;
-      background-color: rgba(255, 255, 255, 0.2);
-      border-radius: 2px;
-      margin: 0 auto 16px auto;
     }
 
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
     .modal-title {
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       font-weight: 600;
     }
 
     .modal-close {
-      background: rgba(255, 255, 255, 0.08);
+      background: none;
       border: none;
       color: var(--text-muted);
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      font-size: 1.2rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      font-size: 1.5rem;
       cursor: pointer;
     }
 
@@ -461,8 +354,8 @@
       justify-content: space-between;
       align-items: center;
       background-color: #1a1a1c;
-      padding: 12px 16px;
-      border-radius: 14px;
+      padding: 10px 14px;
+      border-radius: 12px;
       border: 1px solid var(--border-color);
     }
 
@@ -470,14 +363,14 @@
       background: none;
       border: none;
       color: #ff453a;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       cursor: pointer;
       font-weight: 600;
     }
 
     .checkout-btn {
       width: 100%;
-      padding: 15px;
+      padding: 14px;
       background-color: #34c759;
       color: #fff;
       border: none;
@@ -486,7 +379,6 @@
       font-size: 0.95rem;
       text-transform: uppercase;
       cursor: pointer;
-      box-shadow: 0 4px 16px rgba(52, 199, 89, 0.3);
     }
 
     .empty-state {
@@ -502,12 +394,12 @@
   <div id="toastBanner" class="toast-banner">✅ Пост открыт. Для просмотра сверни каталог👆.</div>
 
   <header>
-    <h1>одежда у шефа🥩</h1>
-    <p>товары в наличии</p>
+    <h1>одежда у шефа</h1>
+    <p>Selected Archive</p>
   </header>
 
   <div class="nav-tabs">
-    <button class="tab-btn active" id="tabCatalog" onclick="switchTab('catalog')">Каталог <span id="catalogCountWrapper">(<span id="catalogCount">0</span>)</span></button>
+    <button class="tab-btn active" id="tabCatalog" onclick="switchTab('catalog')">Каталог</button>
     <button class="tab-btn" id="tabFavorites" onclick="switchTab('favorites')">Избранное (<span id="favCount">0</span>)</button>
   </div>
 
@@ -515,12 +407,12 @@
     <input type="text" id="searchInput" class="search-input" placeholder="Поиск по бренду, вещи..." oninput="filterProducts()" />
   </div>
 
-  <!-- Горизонтальные чипсы категорий -->
-  <div class="categories-scroll-container">
-    <div id="categoryChips" class="category-chips"></div>
-  </div>
-
   <div class="filters-section">
+    <div class="filter-group">
+      <select id="categoryFilter" class="filter-select" onchange="filterProducts()">
+        <option value="all">Все категории</option>
+      </select>
+    </div>
     <div class="filter-group">
       <select id="sizeFilter" class="filter-select" onchange="filterProducts()">
         <option value="all">Все размеры</option>
@@ -530,7 +422,6 @@
 
   <div id="catalog" class="catalog-grid"></div>
 
-  <!-- Плавающая корзина -->
   <div id="cartBar" class="cart-bar" onclick="openCartModal()">
     <div class="cart-info">
       <span class="cart-count" id="cartCountText">0 товаров</span>
@@ -539,10 +430,8 @@
     <div class="cart-action-text">Корзина</div>
   </div>
 
-  <!-- Модальное окно корзины -->
   <div id="cartModal" class="modal-overlay" onclick="closeCartModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
-      <div class="modal-grabber"></div>
       <div class="modal-header">
         <div class="modal-title">Ваш выбор</div>
         <button class="modal-close" onclick="closeCartModalDirect()">&times;</button>
@@ -561,25 +450,8 @@
     let favorites = [];
     let currentTab = 'catalog';
     let openedPostId = null;
-    let selectedCategory = 'all';
 
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQd7Cly6op0lIJW7DB7ari7rIN9OP_Q_wt3xeykDCjahiyIBp4kY6qzsI-zLbcndE6BFzLntFgUWMek/pub?output=csv';
-
-    function triggerHaptic(style = 'light') {
-      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.impactOccurred(style);
-      }
-    }
-
-    function pluralizeGoods(count) {
-      const mod10 = count % 10;
-      const mod100 = count % 100;
-
-      if (mod100 >= 11 && mod100 <= 19) return 'товаров';
-      if (mod10 === 1) return 'товар';
-      if (mod10 >= 2 && mod10 <= 4) return 'товара';
-      return 'товаров';
-    }
 
     function loadFavorites() {
       try {
@@ -672,16 +544,14 @@
 
         const card = document.createElement('div');
         card.className = 'product-card';
-        const safeTitle = (item.title || 'Без названия').replace(/"/g, '&quot;');
-
         card.innerHTML = `
           <div class="image-container">
-            <img class="product-image" src="${item.photo || ''}" alt="${safeTitle}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
+            <img class="product-image" src="${item.photo || ''}" alt="${item.title || ''}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Photo'">
             <span class="product-size">${item.size || ''}</span>
-            <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleFavorite('${item.id}', this)">♥</button>
+            <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleFavorite('${item.id}')">♥</button>
           </div>
           <div class="product-details">
-            <div class="product-title">${safeTitle}</div>
+            <div class="product-title">${item.title || 'Без названия'}</div>
             <div class="product-links">
               <a class="post-link" onclick="openPostAndClose('${item.id}', '${item.post_link || '#'}', this)">
                 ${isOpened ? 'Открыто ↗' : 'Смотреть пост ↗'}
@@ -704,17 +574,14 @@
         const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
         const sizes = [...new Set(allProducts.map(p => p.size).filter(Boolean))];
 
-        // Рендерим чипсы категорий
-        const chipsContainer = document.getElementById('categoryChips');
-        if (chipsContainer) {
-          let chipsHTML = `<div class="chip ${selectedCategory === 'all' ? 'active' : ''}" onclick="selectCategory('all')">Все категории</div>`;
-          categories.forEach(cat => {
-            chipsHTML += `<div class="chip ${selectedCategory === cat ? 'active' : ''}" onclick="selectCategory('${cat}')">${cat}</div>`;
-          });
-          chipsContainer.innerHTML = chipsHTML;
+        const catSelect = document.getElementById('categoryFilter');
+        if (catSelect) {
+          const currentCat = catSelect.value;
+          catSelect.innerHTML = '<option value="all">Все категории</option>';
+          categories.forEach(cat => { catSelect.innerHTML += `<option value="${cat}">${cat}</option>`; });
+          catSelect.value = currentCat;
         }
 
-        // Заполняем фильтр размеров
         const sizeSelect = document.getElementById('sizeFilter');
         if (sizeSelect) {
           const currentSize = sizeSelect.value;
@@ -727,16 +594,10 @@
       }
     }
 
-    function selectCategory(cat) {
-      triggerHaptic('light');
-      selectedCategory = cat;
-      populateFilterOptions();
-      filterProducts();
-    }
-
     function filterProducts() {
       try {
         const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
+        const selectedCategory = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : 'all';
         const selectedSize = document.getElementById('sizeFilter') ? document.getElementById('sizeFilter').value : 'all';
 
         let list = [...allProducts];
@@ -757,18 +618,6 @@
           list = list.filter(p => p.size === selectedSize);
         }
 
-        const catalogCountEl = document.getElementById('catalogCount');
-        const catalogCountWrapper = document.getElementById('catalogCountWrapper');
-        
-        if (catalogCountEl && catalogCountWrapper) {
-          if (currentTab === 'catalog') {
-            catalogCountEl.innerText = list.length;
-            catalogCountWrapper.style.display = 'inline';
-          } else {
-            catalogCountWrapper.style.display = 'none';
-          }
-        }
-
         renderProducts(list);
       } catch (e) {
         console.error("Ошибка фильтрации:", e);
@@ -782,15 +631,17 @@
       toast.style.display = 'block';
       setTimeout(() => {
         toast.style.display = 'none';
-      }, 5000);
+      }, 5000); // 5 секунд
     }
 
     function openPostAndClose(id, url, element) {
       if (!url || url === '#') return;
-      triggerHaptic('light');
+
       openedPostId = id;
       filterProducts();
+
       showToast("✅ Пост открыт. Для просмотра сверни каталог👆.");
+
       if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
         window.Telegram.WebApp.openTelegramLink(url);
       } else {
@@ -798,36 +649,23 @@
       }
     }
 
-    function toggleFavorite(id, element) {
-      triggerHaptic('medium');
+    function toggleFavorite(id) {
       const index = favorites.indexOf(id);
       if (index > -1) {
         favorites.splice(index, 1);
       } else {
         favorites.push(id);
-        // Запуск анимации пульсации при лайке
-        if (element) {
-          element.classList.add('pulse');
-          setTimeout(() => element.classList.remove('pulse'), 350);
-        }
       }
       saveFavorites();
       filterProducts();
     }
 
     function toggleCart(id) {
-      triggerHaptic('light');
       const index = cart.indexOf(id);
       if (index > -1) {
         cart.splice(index, 1);
       } else {
         cart.push(id);
-        // Запуск анимации отскока панели корзины
-        const cartBar = document.getElementById('cartBar');
-        if (cartBar) {
-          cartBar.classList.add('bounce');
-          setTimeout(() => cartBar.classList.remove('bounce'), 350);
-        }
       }
       updateCartUI();
       filterProducts();
@@ -851,7 +689,7 @@
         if (product) totalSum += Number(product.price) || 0;
       });
 
-      if (countText) countText.innerText = `${cart.length} ${pluralizeGoods(cart.length)}`;
+      if (countText) countText.innerText = `${cart.length} товаров`;
       if (totalPriceEl) totalPriceEl.innerText = `${totalSum} ЛЕЙ`;
       cartBar.classList.add('visible');
     }
@@ -891,7 +729,6 @@
     }
 
     function removeFromCart(id) {
-      triggerHaptic('light');
       cart = cart.filter(item => item !== id);
       updateCartUI();
       filterProducts();
@@ -933,6 +770,7 @@
       filterProducts();
     }
 
+    // Мгновенный запуск
     loadFavorites();
     populateFilterOptions();
     filterProducts();
@@ -944,6 +782,7 @@
       } catch (e) {}
     }
 
+    // Фоновая загрузка актуальной таблицы
     fetch(CSV_URL + '&t=' + Date.now())
       .then(response => response.text())
       .then(text => {
