@@ -553,6 +553,18 @@
       }
     }
 
+    function updateCatalogCountBadge() {
+      const catalogCountEl = document.getElementById('catalogCount');
+      if (!catalogCountEl) return;
+
+      // Считаем общее количество товаров в каталоге (без учета фильтров, но с учетом текущей вкладки, чтобы бейдж всегда отражал объем базы/избранного)
+      let baseList = [...allProducts];
+      if (currentTab === 'favorites') {
+        baseList = baseList.filter(p => favorites.includes(p.id));
+      }
+      catalogCountEl.innerText = baseList.length;
+    }
+
     function renderProducts(products) {
       const catalogEl = document.getElementById('catalog');
       if (!catalogEl) return;
@@ -561,12 +573,11 @@
       const favCountEl = document.getElementById('favCount');
       if (favCountEl) favCountEl.innerText = favorites.length;
 
-      const catalogCountEl = document.getElementById('catalogCount');
-      if (catalogCountEl) catalogCountEl.innerText = products.length;
+      updateCatalogCountBadge();
 
       if (!products || products.length === 0) {
         let emptyMsg = currentTab === 'favorites' 
-          ? 'Тут будут храниться лучшие вещи выбранные тобой🥷🏻' 
+          ? 'Твой личный отборный выбор🥩' 
           : 'По вашему запросу ничего не найдено';
         catalogEl.innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
         return;
