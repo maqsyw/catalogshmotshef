@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>одежда у шефа</title>
+  <title>ОДЕЖДА У ШЕФА🥩</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -394,8 +394,8 @@
   <div id="toastBanner" class="toast-banner">✅ Пост открыт. Для просмотра сверни каталог👆.</div>
 
   <header>
-    <h1>одежда у шефа</h1>
-    <p>Selected Archive</p>
+    <h1>ОДЕЖДА У ШЕФА🥩</h1>
+    <p>2HAND &amp; NEW CLOTHES</p>
   </header>
 
   <div class="nav-tabs">
@@ -452,6 +452,24 @@
     let openedPostId = null;
 
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQd7Cly6op0lIJW7DB7ari7rIN9OP_Q_wt3xeykDCjahiyIBp4kY6qzsI-zLbcndE6BFzLntFgUWMek/pub?output=csv';
+
+    // Функция для тактильного отклика Telegram WebApp
+    function triggerHaptic(type = 'impact', style = 'light') {
+      try {
+        const hf = window.Telegram?.WebApp?.HapticFeedback;
+        if (!hf) return;
+
+        if (type === 'notification') {
+          hf.notificationOccurred(style); // 'error', 'success', 'warning'
+        } else if (type === 'selection') {
+          hf.selectionChanged();
+        } else {
+          hf.impactOccurred(style); // 'light', 'medium', 'heavy', 'rigid', 'soft'
+        }
+      } catch (e) {
+        console.warn('Haptic feedback недоступен:', e);
+      }
+    }
 
     function loadFavorites() {
       try {
@@ -631,11 +649,14 @@
       toast.style.display = 'block';
       setTimeout(() => {
         toast.style.display = 'none';
-      }, 5000); // 5 секунд
+      }, 5000);
     }
 
     function openPostAndClose(id, url, element) {
       if (!url || url === '#') return;
+
+      // Тактильный отклик при нажатии на "Смотреть пост"
+      triggerHaptic('impact', 'light');
 
       openedPostId = id;
       filterProducts();
@@ -650,6 +671,9 @@
     }
 
     function toggleFavorite(id) {
+      // Тактильный отклик при добавлении/удалении из избранного
+      triggerHaptic('impact', 'medium');
+
       const index = favorites.indexOf(id);
       if (index > -1) {
         favorites.splice(index, 1);
@@ -664,8 +688,12 @@
       const index = cart.indexOf(id);
       if (index > -1) {
         cart.splice(index, 1);
+        // Легкий отклик при удалении из корзины
+        triggerHaptic('impact', 'light');
       } else {
         cart.push(id);
+        // Отклик успеха при добавлении в корзину
+        triggerHaptic('notification', 'success');
       }
       updateCartUI();
       filterProducts();
@@ -729,6 +757,7 @@
     }
 
     function removeFromCart(id) {
+      triggerHaptic('impact', 'light');
       cart = cart.filter(item => item !== id);
       updateCartUI();
       filterProducts();
@@ -739,7 +768,7 @@
     function sendOrderToManager() {
       if (cart.length === 0) return;
 
-      let orderText = "🛍 Заказ из каталога «Одежда у шефа»:\n\n";
+      let orderText = "🛍 Заказ из каталога «ОДЕЖДА У ШЕФА🥩»:\n\n";
       let totalSum = 0;
 
       cart.forEach((id, index) => {
