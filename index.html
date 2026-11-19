@@ -403,11 +403,11 @@
     <button class="tab-btn" id="tabFavorites" onclick="switchTab('favorites')">Избранное (<span id="favCount">0</span>)</button>
   </div>
 
-  <div class="search-bar">
+  <div class="search-bar" id="searchBarContainer">
     <input type="text" id="searchInput" class="search-input" placeholder="Поиск по бренду, вещи..." oninput="filterProducts()" />
   </div>
 
-  <div class="filters-section">
+  <div class="filters-section" id="filtersContainer">
     <div class="filter-group">
       <select id="categoryFilter" class="filter-select" onchange="filterProducts()">
         <option value="all">Все категории</option>
@@ -553,7 +553,6 @@
       }
     }
 
-    // Подсчет товаров для каталога с учетом активных фильтров поиска/категорий/размеров
     function updateFilteredCatalogCount() {
       const catalogCountEl = document.getElementById('catalogCount');
       if (!catalogCountEl) return;
@@ -836,6 +835,19 @@
       currentTab = tab;
       document.getElementById('tabCatalog').classList.toggle('active', tab === 'catalog');
       document.getElementById('tabFavorites').classList.toggle('active', tab === 'favorites');
+
+      // Управление видимостью поиска и фильтров
+      const searchBar = document.getElementById('searchBarContainer');
+      const filters = document.getElementById('filtersContainer');
+
+      if (tab === 'favorites') {
+        if (searchBar) searchBar.style.display = 'none';
+        if (filters) filters.style.display = 'none';
+      } else {
+        if (searchBar) searchBar.style.display = 'block';
+        if (filters) filters.style.display = 'grid';
+      }
+
       filterProducts();
     }
 
