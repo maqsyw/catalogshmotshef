@@ -553,16 +553,30 @@
       }
     }
 
-    function updateCatalogCountBadge() {
+    // Подсчет товаров для каталога с учетом активных фильтров поиска/категорий/размеров
+    function updateFilteredCatalogCount() {
       const catalogCountEl = document.getElementById('catalogCount');
       if (!catalogCountEl) return;
 
-      // Считаем общее количество товаров в каталоге (без учета фильтров, но с учетом текущей вкладки, чтобы бейдж всегда отражал объем базы/избранного)
-      let baseList = [...allProducts];
-      if (currentTab === 'favorites') {
-        baseList = baseList.filter(p => favorites.includes(p.id));
+      const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
+      const selectedCategory = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : 'all';
+      const selectedSize = document.getElementById('sizeFilter') ? document.getElementById('sizeFilter').value : 'all';
+
+      let list = [...allProducts];
+
+      if (searchQuery) {
+        list = list.filter(p => (p.title && p.title.toLowerCase().includes(searchQuery)) || (p.category && p.category.toLowerCase().includes(searchQuery)));
       }
-      catalogCountEl.innerText = baseList.length;
+
+      if (selectedCategory !== 'all') {
+        list = list.filter(p => p.category === selectedCategory);
+      }
+
+      if (selectedSize !== 'all') {
+        list = list.filter(p => p.size === selectedSize);
+      }
+
+      catalogCountEl.innerText = list.length;
     }
 
     function renderProducts(products) {
@@ -573,11 +587,11 @@
       const favCountEl = document.getElementById('favCount');
       if (favCountEl) favCountEl.innerText = favorites.length;
 
-      updateCatalogCountBadge();
+      updateFilteredCatalogCount();
 
       if (!products || products.length === 0) {
         let emptyMsg = currentTab === 'favorites' 
-          ? 'Твой личный отборный выбор🥩' 
+          ? 'Сохраняй сюда вещи, которые понравились чтобы не потерять' 
           : 'По вашему запросу ничего не найдено';
         catalogEl.innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
         return;
