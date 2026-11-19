@@ -63,6 +63,8 @@
       border: 1px solid rgba(255, 255, 255, 0.2);
       font-size: 0.82rem;
       font-weight: 500;
+      line-height: 1.45;
+      white-space: pre-line;
       text-align: center;
       z-index: 999;
       display: none;
@@ -391,7 +393,8 @@
 </head>
 <body>
 
-  <div id="toastBanner" class="toast-banner">✅ Пост открыт. Для просмотра сверни каталог👆.</div>
+  <div id="toastBanner" class="toast-banner">Для просмотра сверни каталог👆🏻
+Пост успешно открыт✅</div>
 
   <header>
     <h1>ОДЕЖДА У ШЕФА🥩</h1>
@@ -404,17 +407,27 @@
   </div>
 
   <div class="search-bar" id="searchBarContainer">
-    <input type="text" id="searchInput" class="search-input" placeholder="Поиск по бренду, вещи..." oninput="filterProducts()" />
+    <form onsubmit="handleSearchSubmit(event)">
+      <input
+        type="search"
+        id="searchInput"
+        class="search-input"
+        placeholder="Поиск по бренду, вещи..."
+        enterkeyhint="search"
+        oninput="filterProducts()"
+        onkeydown="handleSearchKeyDown(event)"
+      />
+    </form>
   </div>
 
   <div class="filters-section" id="filtersContainer">
     <div class="filter-group">
-      <select id="categoryFilter" class="filter-select" onchange="filterProducts()">
+      <select id="categoryFilter" class="filter-select" onchange="blurSearchInput(); filterProducts()">
         <option value="all">Все категории</option>
       </select>
     </div>
     <div class="filter-group">
-      <select id="sizeFilter" class="filter-select" onchange="filterProducts()">
+      <select id="sizeFilter" class="filter-select" onchange="blurSearchInput(); filterProducts()">
         <option value="all">Все размеры</option>
       </select>
     </div>
@@ -453,6 +466,27 @@
     let audioCtx = null;
 
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQd7Cly6op0lIJW7DB7ari7rIN9OP_Q_wt3xeykDCjahiyIBp4kY6qzsI-zLbcndE6BFzLntFgUWMek/pub?output=csv';
+
+    function blurSearchInput() {
+      const input = document.getElementById('searchInput');
+      if (input && document.activeElement === input) {
+        input.blur();
+      }
+    }
+
+    function handleSearchSubmit(event) {
+      if (event) event.preventDefault();
+      blurSearchInput();
+      filterProducts();
+    }
+
+    function handleSearchKeyDown(event) {
+      if (event.key === 'Enter' || event.keyCode === 13) {
+        event.preventDefault();
+        blurSearchInput();
+        filterProducts();
+      }
+    }
 
     // Короткий звук клика через Web Audio API (без внешних файлов)
     function playClickSound() {
@@ -748,13 +782,14 @@
     function openPostAndClose(id, url, element) {
       if (!url || url === '#') return;
 
+      blurSearchInput();
       playClickSound();
       triggerHaptic('impact', 'light');
 
       openedPostId = id;
       filterProducts();
 
-      showToast("✅ Пост открыт. Для просмотра сверни каталог👆.");
+      showToast("Для просмотра сверни каталог👆🏻\nПост успешно открыт✅");
 
       if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
         window.Telegram.WebApp.openTelegramLink(url);
@@ -764,6 +799,7 @@
     }
 
     function toggleFavorite(id) {
+      blurSearchInput();
       triggerHaptic('impact', 'medium');
 
       const index = favorites.indexOf(id);
@@ -777,6 +813,7 @@
     }
 
     function toggleCart(id) {
+      blurSearchInput();
       const index = cart.indexOf(id);
       if (index > -1) {
         cart.splice(index, 1);
@@ -814,6 +851,7 @@
     }
 
     function openCartModal() {
+      blurSearchInput();
       const listEl = document.getElementById('cartItemsList');
       if (!listEl) return;
       listEl.innerHTML = '';
@@ -885,6 +923,7 @@
     }
 
     function switchTab(tab) {
+      blurSearchInput();
       currentTab = tab;
       document.getElementById('tabCatalog').classList.toggle('active', tab === 'catalog');
       document.getElementById('tabFavorites').classList.toggle('active', tab === 'favorites');
