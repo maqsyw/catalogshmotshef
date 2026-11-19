@@ -467,6 +467,16 @@
 
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQd7Cly6op0lIJW7DB7ari7rIN9OP_Q_wt3xeykDCjahiyIBp4kY6qzsI-zLbcndE6BFzLntFgUWMek/pub?output=csv';
 
+    // Случайное перемешивание массива (Fisher-Yates)
+    function shuffleArray(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
     function blurSearchInput() {
       const input = document.getElementById('searchInput');
       if (input && document.activeElement === input) {
@@ -942,7 +952,8 @@
       filterProducts();
     }
 
-    // Мгновенный запуск
+    // Мгновенный запуск с перемешиванием
+    allProducts = shuffleArray(allProducts);
     loadStorageData();
     updateCartUI();
     populateFilterOptions();
@@ -955,13 +966,13 @@
       } catch (e) {}
     }
 
-    // Фоновая загрузка актуальной таблицы
+    // Фоновая загрузка актуальной таблицы с рандомным перемешиванием при каждом входе
     fetch(CSV_URL + '&t=' + Date.now())
       .then(response => response.text())
       .then(text => {
         const parsed = parseCSV(text);
         if (parsed.length > 0) {
-          allProducts = parsed;
+          allProducts = shuffleArray(parsed);
           populateFilterOptions();
           filterProducts();
           updateCartUI();
