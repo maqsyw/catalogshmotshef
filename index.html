@@ -453,6 +453,12 @@
 
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQd7Cly6op0lIJW7DB7ari7rIN9OP_Q_wt3xeykDCjahiyIBp4kY6qzsI-zLbcndE6BFzLntFgUWMek/pub?output=csv';
 
+    // Вспомогательная функция для разделения двойных размеров (например, "S/M" -> ["S", "M"])
+    function getParsedSizes(sizeStr) {
+      if (!sizeStr) return [];
+      return sizeStr.split('/').map(s => s.trim().toUpperCase()).filter(Boolean);
+    }
+
     // Функция для тактильного отклика Telegram WebApp
     function triggerHaptic(type = 'impact', style = 'light') {
       try {
@@ -572,7 +578,10 @@
       }
 
       if (selectedSize !== 'all') {
-        list = list.filter(p => p.size === selectedSize);
+        list = list.filter(p => {
+          const itemSizes = getParsedSizes(p.size);
+          return itemSizes.includes(selectedSize.toUpperCase());
+        });
       }
 
       catalogCountEl.innerText = list.length;
@@ -631,7 +640,13 @@
     function populateFilterOptions() {
       try {
         const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
-        const sizes = [...new Set(allProducts.map(p => p.size).filter(Boolean))];
+        
+        // Собираем все отдельные размеры, разбивая двойные размеры через слэш
+        let rawSizesSet = new Set();
+        allProducts.forEach(p => {
+          getParsedSizes(p.size).forEach(sz => rawSizesSet.add(sz));
+        });
+        const sizes = [...rawSizesSet].sort();
 
         const catSelect = document.getElementById('categoryFilter');
         if (catSelect) {
@@ -674,7 +689,10 @@
         }
 
         if (selectedSize !== 'all') {
-          list = list.filter(p => p.size === selectedSize);
+          list = list.filter(p => {
+            const itemSizes = getParsedSizes(p.size);
+            return itemSizes.includes(selectedSize.toUpperCase());
+          });
         }
 
         renderProducts(list);
@@ -836,7 +854,6 @@
       document.getElementById('tabCatalog').classList.toggle('active', tab === 'catalog');
       document.getElementById('tabFavorites').classList.toggle('active', tab === 'favorites');
 
-      // Управление видимостью поиска и фильтров
       const searchBar = document.getElementById('searchBarContainer');
       const filters = document.getElementById('filtersContainer');
 
