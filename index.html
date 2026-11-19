@@ -450,8 +450,43 @@
     let favorites = [];
     let currentTab = 'catalog';
     let openedPostId = null;
+    let audioCtx = null;
 
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQd7Cly6op0lIJW7DB7ari7rIN9OP_Q_wt3xeykDCjahiyIBp4kY6qzsI-zLbcndE6BFzLntFgUWMek/pub?output=csv';
+
+    // Короткий звук клика через Web Audio API (без внешних файлов)
+    function playClickSound() {
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+
+        if (!audioCtx) {
+          audioCtx = new AudioContextClass();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(840, now + 0.06);
+
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.07);
+      } catch (e) {
+        console.warn('Звук недоступен:', e);
+      }
+    }
 
     // Вспомогательная функция для разделения двойных размеров (например, "S/M" -> ["S", "M"])
     function getParsedSizes(sizeStr) {
@@ -641,7 +676,6 @@
       try {
         const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
         
-        // Собираем все отдельные размеры, разбивая двойные размеры через слэш
         let rawSizesSet = new Set();
         allProducts.forEach(p => {
           getParsedSizes(p.size).forEach(sz => rawSizesSet.add(sz));
@@ -714,6 +748,7 @@
     function openPostAndClose(id, url, element) {
       if (!url || url === '#') return;
 
+      playClickSound();
       triggerHaptic('impact', 'light');
 
       openedPostId = id;
